@@ -1,17 +1,12 @@
 # ZendPdf component
 
-Master: [![Build Status](https://secure.travis-ci.org/zendframework/ZendPdf.png?branch=master)](http://travis-ci.org/zendframework/ZendPdf)
-
-> ## ABANDONED
->
-> This package is no longer maintained. We recommend [TCPDF](https://tcpdf.org/) as a replacement.
+I like Zend PDF and would like to bring it up to date PHP 8 and fix a few of the bugs. I use ZendPdf a lot in Magento2 and its sad to see that its been abandoned....  
 
 ## Installation
 Run the command:
 
 ```bash
-composer require "zendframework/zendpdf": "2.0.*@dev"
+composer require "rwbthatisme/zendpdf": "2.0.*@dev"
 ```
 
-At that point, follow the instructions in the documentation folder for actual
-usage of the component. (Documentation is forthcoming.)
+## Notes
