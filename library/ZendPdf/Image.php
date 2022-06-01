@@ -121,7 +121,7 @@ abstract class Image
         /* Create a file parser data source object for this file. File path and
          * access permission checks are handled here.
          */
-        $dataSource = new BinaryParser\DataSource\File($filePath);
+        $dataSource = new BinaryParser\DataSource\FileDataSource($filePath);
 
         /* Attempt to determine the type of image. We can't always trust file
          * extensions, but try that first since it's fastest.

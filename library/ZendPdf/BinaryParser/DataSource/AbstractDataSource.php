@@ -73,7 +73,7 @@ abstract class AbstractDataSource
      * the request or if an error occurs.
      *
      * @param integer $byteCount Number of bytes to read.
-     * @return string
+     * @return StringDataSource
      * @throws ExceptionInterface
      */
     abstract public function readBytes($byteCount);
@@ -86,7 +86,7 @@ abstract class AbstractDataSource
      * other additional pointers (such as the seek position of a file pointer)
      * that might be used.
      *
-     * @return string
+     * @return StringDataSource
      */
     abstract public function readAllBytes();
 
@@ -99,7 +99,7 @@ abstract class AbstractDataSource
      * Subclasses should override this method to provide a more specific
      * description of the actual object being represented.
      *
-     * @return string
+     * @return StringDataSource
      */
     public function __toString()
     {

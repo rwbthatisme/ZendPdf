@@ -101,7 +101,7 @@ abstract class AbstractTrailer
     abstract public function getPDFLength();
 
     /**
-     * Get PDF String
+     * Get PDF StringDataSource
      *
      * @return string
      */

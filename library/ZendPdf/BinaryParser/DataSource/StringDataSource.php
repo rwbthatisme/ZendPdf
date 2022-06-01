@@ -20,14 +20,14 @@ use ZendPdf\Exception\ExceptionInterface;
  * @package    Zend_PDF
  * @subpackage Zend_PDF_BinaryParser
  */
-class String extends AbstractDataSource
+class StringDataSource extends AbstractDataSource
 {
     /**** Instance Variables ****/
 
 
     /**
      * The string to parse.
-     * @var string
+     * @var StringDataSource
      */
     protected $_string = '';
 
@@ -42,12 +42,12 @@ class String extends AbstractDataSource
      *
      * Verifies that the string is not empty.
      *
-     * @param string $string String to parse.
+     * @param StringDataSource $string StringDataSource to parse.
      */
     public function __construct($string)
     {
         if (empty($string)) {
-            throw new Exception\InvalidArgumentException('String is empty');
+            throw new Exception\InvalidArgumentException('StringDataSource is empty');
         }
         $this->_size = strlen($string);
         $this->_string = $string;
@@ -71,7 +71,7 @@ class String extends AbstractDataSource
      * the request.
      *
      * @param integer $byteCount Number of bytes to read.
-     * @return string
+     * @return StringDataSource
      * @throws ExceptionInterface
      */
     public function readBytes($byteCount)
@@ -89,7 +89,7 @@ class String extends AbstractDataSource
      *
      * Preserves the current read position.
      *
-     * @return string
+     * @return StringDataSource
      */
     public function readAllBytes()
     {
@@ -102,10 +102,10 @@ class String extends AbstractDataSource
     /**
      * Returns a string containing the parsed string's length.
      *
-     * @return string
+     * @return StringDataSource
      */
     public function __toString()
     {
-        return "String ($this->_size bytes)";
+        return "StringDataSource ($this->_size bytes)";
     }
 }

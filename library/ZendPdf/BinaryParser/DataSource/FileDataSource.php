@@ -25,14 +25,14 @@ use ZendPdf\Exception\ExceptionInterface;
  * @package    Zend_PDF
  * @subpackage Zend_PDF_BinaryParser
  */
-class File extends AbstractDataSource
+class FileDataSource extends AbstractDataSource
 {
     /**** Instance Variables ****/
 
 
     /**
      * Fully-qualified path to the file.
-     * @var string
+     * @var StringDataSource
      */
     protected $_filePath = '';
 
@@ -56,7 +56,7 @@ class File extends AbstractDataSource
      *
      * Throws an exception if the file is missing or cannot be opened.
      *
-     * @param string $filePath Fully-qualified path to the file.
+     * @param StringDataSource $filePath Fully-qualified path to the file.
      * @throws ExceptionInterface
      */
     public function __construct($filePath)
@@ -100,7 +100,7 @@ class File extends AbstractDataSource
      * if there is insufficient data to completely fulfill the request.
      *
      * @param integer $byteCount Number of bytes to read.
-     * @return string
+     * @return StringDataSource
      * @throws ExceptionInterface
      */
     public function readBytes($byteCount)
@@ -121,7 +121,7 @@ class File extends AbstractDataSource
      *
      * Preserves the current file seek position.
      *
-     * @return string
+     * @return StringDataSource
      */
     public function readAllBytes()
     {
@@ -134,7 +134,7 @@ class File extends AbstractDataSource
     /**
      * Returns the full filesystem path of the file.
      *
-     * @return string
+     * @return StringDataSource
      */
     public function __toString()
     {

@@ -50,14 +50,14 @@ class Uri extends AbstractAction
      * @param boolean $isMap A flag specifying whether to track the mouse position when the URI is resolved
      * @return Uri
      */
-    public static function create($uri, $isMap = false)
+    public static function create(string $uri, bool $isMap): Uri
     {
         self::_validateUri($uri);
 
         $dictionary = new DictionaryObject();
         $dictionary->Type = new InternalType\NameObject('Action');
         $dictionary->S = new InternalType\NameObject('URI');
-        $dictionary->Next = null;
+        $dictionary->Next = new InternalType\ArrayObject();
         $dictionary->URI = new InternalType\StringObject($uri);
         if ($isMap) {
             $dictionary->IsMap = new InternalType\BooleanObject(true);
@@ -73,12 +73,13 @@ class Uri extends AbstractAction
      * @return true
      * @throws ExceptionInterface
      */
-    protected static function _validateUri($uri)
+    protected static function _validateUri(string $uri): bool
     {
-        $scheme = parse_url((string)$uri, PHP_URL_SCHEME);
+        $scheme = parse_url($uri, PHP_URL_SCHEME);
         if ($scheme === false || $scheme === null) {
             throw new Exception\InvalidArgumentException('Invalid URI');
         }
+        return true;
     }
 
     /**
@@ -87,7 +88,7 @@ class Uri extends AbstractAction
      * @param string $uri The uri to resolve, encoded in 7-bit ASCII.
      * @return Uri
      */
-    public function setUri($uri)
+    public function setUri(string $uri): static
     {
         $this->_validateUri($uri);
 
@@ -102,7 +103,7 @@ class Uri extends AbstractAction
      *
      * @return string
      */
-    public function getUri()
+    public function getUri(): string
     {
         return $this->_actionDictionary->URI->value;
     }
@@ -118,14 +119,14 @@ class Uri extends AbstractAction
      * @param boolean $isMap A flag specifying whether to track the mouse position when the URI is resolved
      * @return Uri
      */
-    public function setIsMap($isMap)
+    public function setIsMap(bool $isMap): static
     {
         $this->_actionDictionary->touch();
 
         if ($isMap) {
             $this->_actionDictionary->IsMap = new InternalType\BooleanObject(true);
         } else {
-            $this->_actionDictionary->IsMap = null;
+            $this->_actionDictionary->IsMap = new InternalType\BooleanObject(false);
         }
 
         return $this;
@@ -141,7 +142,7 @@ class Uri extends AbstractAction
      *
      * @return boolean
      */
-    public function getIsMap()
+    public function getIsMap(): bool
     {
         return $this->_actionDictionary->IsMap !== null &&
             $this->_actionDictionary->IsMap->value;

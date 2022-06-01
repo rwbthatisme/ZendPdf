@@ -28,7 +28,7 @@ use ZendPdf\Trailer\Parsed;
 class StructureParser
 {
     /**
-     * String parser
+     * StringDataSource parser
      *
      * @var DataParser
      */
@@ -388,7 +388,7 @@ class StructureParser
     }
 
     /**
-     * Get PDF String
+     * Get PDF StringDataSource
      *
      * @return string
      */

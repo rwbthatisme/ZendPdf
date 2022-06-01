@@ -10,7 +10,6 @@
 
 namespace ZendPdf\InternalType;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
 use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\ObjectFactory;
@@ -26,20 +25,26 @@ class DictionaryObject extends AbstractTypeObject
 {
     /**
      * Dictionary elements
-     * Array of \ZendPdf\InternalType objects ('name' => \ZendPdf\InternalType\AbstaractTypeObject)
+     * Array of \ZendPdf\InternalType objects ('name' => \ZendPdf\InternalType\AbstractTypeObject)
      *
      * @var array
      */
-    private $_items = array();
+    private array $_items = [];
+
+    public object $Type;
+    public object $S;
+    public object $Next;
+    public object $URI;
+    public object $IsMap;
 
 
     /**
      * Object constructor
      *
-     * @param array $val - array of \ZendPdf\InternalType\AbstractTypeObject objects
+     * @param array|null $val - array of \ZendPdf\InternalType\AbstractTypeObject objects
      * @throws ExceptionInterface
      */
-    public function __construct($val = null)
+    public function __construct(array $val = null)
     {
         if ($val === null) {
             return;
@@ -76,7 +81,7 @@ class DictionaryObject extends AbstractTypeObject
      *
      * @return array
      */
-    public function getKeys()
+    public function getKeys(): array
     {
         return array_keys($this->_items);
     }
@@ -85,24 +90,21 @@ class DictionaryObject extends AbstractTypeObject
     /**
      * Get handler
      *
-     * @param string $property
+     * @param $item
      * @return AbstractTypeObject | null
      */
     public function __get($item)
     {
-        $element = isset($this->_items[$item]) ? $this->_items[$item]
-            : null;
-
-        return $element;
+        return $this->_items[$item] ?? null;
     }
 
     /**
      * Set handler
      *
-     * @param string $property
+     * @param string $item
      * @param mixed $value
      */
-    public function __set($item, $value)
+    public function __set(string $item, mixed $value)
     {
         if ($value === null) {
             unset($this->_items[$item]);
@@ -116,7 +118,7 @@ class DictionaryObject extends AbstractTypeObject
      *
      * @return integer
      */
-    public function getType()
+    public function getType(): int
     {
         return AbstractTypeObject::TYPE_DICTIONARY;
     }
@@ -124,10 +126,10 @@ class DictionaryObject extends AbstractTypeObject
     /**
      * Return object as string
      *
-     * @param ObjectFactory $factory
+     * @param ObjectFactory|null $factory
      * @return string
      */
-    public function toString(ObjectFactory $factory = null)
+    public function toString(ObjectFactory $factory = null): string
     {
         $outStr = '<<';
         $lastNL = 0;
@@ -159,7 +161,7 @@ class DictionaryObject extends AbstractTypeObject
      * @returns AbstractTypeObject
      * @throws ExceptionInterface
      */
-    public function makeClone(ObjectFactory $factory, array &$processed, $mode)
+    public function makeClone(ObjectFactory $factory, array &$processed, $mode): DictionaryObject|NullObject
     {
         if (isset($this->_items['Type'])) {
             if ($this->_items['Type']->value == 'Pages') {
@@ -203,11 +205,11 @@ class DictionaryObject extends AbstractTypeObject
      *
      * Dictionary is returned as an associative array
      *
-     * @return mixed
+     * @return array
      */
-    public function toPhp()
+    public function toPhp(): array
     {
-        $phpArray = array();
+        $phpArray = [];
 
         foreach ($this->_items as $itemName => $item) {
             $phpArray[$itemName] = $item->toPhp();

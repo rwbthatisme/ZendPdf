@@ -103,7 +103,7 @@ class PdfDocument
      *
      * @var array
      */
-    protected $_originalProperties = [];
+    public $_originalProperties = [];
     /**
      * Document level javascript
      *
@@ -116,7 +116,7 @@ class PdfDocument
      *
      * @var array   - array of \ZendPdf\InternalStructure\NavigationTarget objects
      */
-    protected $_namedTargets = [];
+    public $_namedTargets = [];
     /**
      * Original document outlines list
      * Used to track outlines update
@@ -156,7 +156,7 @@ class PdfDocument
      *
      * @var SplObjectStorage
      */
-    protected $_pageReferences = null;
+    protected $_pageReferences = [];
     /**
      * Pages collection hash:
      * <page number> => \ZendPdf\Page
@@ -864,7 +864,7 @@ class PdfDocument
         }
 
         // Page reference is a PDF page dictionary reference
-        $pageDictionaryHashId = spl_object_hash($pageElement->getObject());
+        $pageDictionaryHashId =  spl_object_hash($pageElement->getObject());
         if (!isset($this->_pageReferences[$pageDictionaryHashId])) {
             return null;
         }
@@ -900,7 +900,7 @@ class PdfDocument
      */
     protected function _cleanUpAction(Action\AbstractAction $action, $refreshPageCollectionHashes = true)
     {
-        if ($this->_pageReferences === null || $refreshPageCollectionHashes) {
+        if ($this->_pageReferences->count() === 0 || $refreshPageCollectionHashes) {
             $this->_refreshPagesHash();
         }
 

@@ -30,7 +30,7 @@ class Style
      *
      * @var ColorInterface|null
      */
-    private $_fillColor = null;
+    private ?ColorInterface $_fillColor = null;
 
     /**
      * Line color.
@@ -39,14 +39,14 @@ class Style
      * @var ColorInterface|null
      */
 
-    private $_color;
+    private ?ColorInterface $_color;
 
     /**
      * Line width.
      *
      * @var NumericObject
      */
-    private $_lineWidth;
+    private NumericObject $_lineWidth;
 
     /**
      * Array which describes line dashing pattern.
@@ -55,36 +55,36 @@ class Style
      *
      * @var array
      */
-    private $_lineDashingPattern;
+    private array $_lineDashingPattern;
 
     /**
      * Line dashing phase
      *
      * @var float
      */
-    private $_lineDashingPhase;
+    private float $_lineDashingPhase;
 
     /**
      * Current font
      *
      * @var AbstractFont
      */
-    private $_font;
+    private AbstractFont $_font;
 
     /**
      * Font size
      *
      * @var float
      */
-    private $_fontSize;
+    private float $_fontSize;
 
 
     /**
      * Create style.
      *
-     * @param Style $anotherStyle
+     * @param Style|null $anotherStyle
      */
-    public function __construct($anotherStyle = null)
+    public function __construct(Style $anotherStyle = null)
     {
         if ($anotherStyle !== null) {
             $this->_fillColor = $anotherStyle->_fillColor;
@@ -112,7 +112,7 @@ class Style
      *
      * @return ColorInterface|null
      */
-    public function getFillColor()
+    public function getFillColor(): ?ColorInterface
     {
         return $this->_fillColor;
     }
@@ -132,7 +132,7 @@ class Style
      *
      * @return ColorInterface|null
      */
-    public function getLineColor()
+    public function getLineColor(): ?ColorInterface
     {
         return $this->_color;
     }
@@ -142,7 +142,7 @@ class Style
      *
      * @return float
      */
-    public function getLineWidth()
+    public function getLineWidth(): float
     {
         return $this->_lineWidth->value;
     }
@@ -162,7 +162,7 @@ class Style
      *
      * @return array
      */
-    public function getLineDashingPattern()
+    public function getLineDashingPattern(): array
     {
         return $this->_lineDashingPattern;
     }
@@ -171,9 +171,9 @@ class Style
      * Set line dashing pattern
      *
      * @param array $pattern
-     * @param float $phase
+     * @param float|int $phase
      */
-    public function setLineDashingPattern($pattern, $phase = 0)
+    public function setLineDashingPattern(array $pattern, float|int $phase = 0)
     {
         if ($pattern === Page::LINE_DASHING_SOLID) {
             $pattern = [];
@@ -189,7 +189,7 @@ class Style
      *
      * @return AbstractFont $font
      */
-    public function getFont()
+    public function getFont(): AbstractFont
     {
         return $this->_font;
     }
@@ -211,7 +211,7 @@ class Style
      *
      * @return float $fontSize
      */
-    public function getFontSize()
+    public function getFontSize(): float
     {
         return $this->_fontSize;
     }
@@ -231,7 +231,7 @@ class Style
      *
      * @return float
      */
-    public function getLineDashingPhase()
+    public function getLineDashingPhase(): float
     {
         return $this->_lineDashingPhase->value;
     }
@@ -242,7 +242,7 @@ class Style
      *
      * @return string
      */
-    public function instructions()
+    public function instructions(): string
     {
         $instructions = '';
 

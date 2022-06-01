@@ -44,7 +44,7 @@ class UpdateInfoContainer
     private $_isFree;
 
     /**
-     * String representation of the object
+     * StringDataSource representation of the object
      *
      * @var AbstractContainer|null
      */

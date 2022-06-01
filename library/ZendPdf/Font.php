@@ -177,7 +177,7 @@ abstract class Font
     const FONT_ZAPFDINGBATS = 'ZapfDingbats';
 
 
-    /* Font Name String Types */
+    /* Font Name StringDataSource Types */
 
     /**
      * Full copyright notice for the font.
@@ -574,7 +574,7 @@ abstract class Font
         /* Create a file parser data source object for this file. File path and
          * access permission checks are handled here.
          */
-        $dataSource = new BinaryParser\DataSource\File($filePath);
+        $dataSource = new BinaryParser\DataSource\FileDataSource($filePath);
 
         /* Attempt to determine the type of font. We can't always trust file
          * extensions, but try that first since it's fastest.

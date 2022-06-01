@@ -42,7 +42,7 @@ class Generated extends AbstractTrailer
     }
 
     /**
-     * Get PDF String
+     * Get PDF StringDataSource
      *
      * @return string
      */

@@ -66,7 +66,7 @@ class Created extends AbstractOutline
 
     /**
      * Target destination or action.
-     * String means named destination
+     * StringDataSource means named destination
      *
      * Null means no target.
      *

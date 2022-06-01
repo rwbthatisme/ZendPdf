@@ -130,7 +130,7 @@ class Page
      *
      * @var integer
      */
-    protected $_saveCount = 0;
+    public $_saveCount = 0;
 
     /**
      * Safe Graphics State semafore
