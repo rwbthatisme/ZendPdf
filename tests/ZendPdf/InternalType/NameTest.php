@@ -10,6 +10,7 @@
 
 namespace ZendPdfTest\InternalType;
 
+use PHPUnit_Framework_TestCase;
 use ZendPdf\InternalType;
 
 /**
@@ -26,7 +27,7 @@ use ZendPdf\InternalType;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class NameTest extends \PHPUnit_Framework_TestCase
+class NameTest extends PHPUnit_Framework_TestCase
 {
     public function testPDFName()
     {

@@ -10,9 +10,10 @@
 
 namespace ZendPdfTest;
 
+use PHPUnit_Framework_TestCase;
 use ZendPdf as Pdf;
-use ZendPdf\InternalType;
 use ZendPdf\Destination;
+use ZendPdf\InternalType;
 
 /** \ZendPdf\Destination */
 
@@ -28,7 +29,7 @@ use ZendPdf\Destination;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class DestinationTest extends \PHPUnit_Framework_TestCase
+class DestinationTest extends PHPUnit_Framework_TestCase
 {
     /**
      * Stores the original set timezone

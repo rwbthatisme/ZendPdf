@@ -10,8 +10,8 @@
 
 namespace ZendPdfTest\InternalType;
 
+use PHPUnit_Framework_TestCase;
 use ZendPdf\InternalType;
-use ZendPdf as Pdf;
 
 /**
  * \ZendPdf\InternalType\DictionaryObject
@@ -27,7 +27,7 @@ use ZendPdf as Pdf;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class DictionaryTest extends \PHPUnit_Framework_TestCase
+class DictionaryTest extends PHPUnit_Framework_TestCase
 {
     public function testPDFDictionary1()
     {
@@ -100,7 +100,7 @@ class DictionaryTest extends \PHPUnit_Framework_TestCase
         $srcArray['BinaryText'] = new InternalType\BinaryStringObject("\x01\x02\x00\xff");
         $dictionaryObj = new InternalType\DictionaryObject($srcArray);
         $this->assertEquals($dictionaryObj->toString(),
-                            '<</Bool false /Number 100.426 /Name /MyName /Text (some text) /BinaryText <010200FF> >>');
+            '<</Bool false /Number 100.426 /Name /MyName /Text (some text) /BinaryText <010200FF> >>');
     }
 
     public function testAdd()
@@ -111,7 +111,7 @@ class DictionaryTest extends \PHPUnit_Framework_TestCase
         $dictionaryObj->add(new InternalType\NameObject('Var3'), new InternalType\NameObject('MyName'));
         $dictionaryObj->add(new InternalType\NameObject('Var4'), new InternalType\StringObject('some text'));
         $this->assertEquals($dictionaryObj->toString(),
-                            '<</Var1 false /Var2 100.426 /Var3 /MyName /Var4 (some text) >>');
+            '<</Var1 false /Var2 100.426 /Var3 /MyName /Var4 (some text) >>');
     }
 
 }

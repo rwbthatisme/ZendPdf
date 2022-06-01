@@ -10,8 +10,8 @@
 
 namespace ZendPdfTest\InternalType;
 
+use PHPUnit_Framework_TestCase;
 use ZendPdf\InternalType;
-use ZendPdf as Pdf;
 
 /**
  * \ZendPdf\InternalType\ArrayObject
@@ -27,7 +27,7 @@ use ZendPdf as Pdf;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class ArrayTest extends \PHPUnit_Framework_TestCase
+class ArrayTest extends PHPUnit_Framework_TestCase
 {
     public function testPDFArray1()
     {

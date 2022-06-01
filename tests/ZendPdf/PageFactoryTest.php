@@ -10,6 +10,7 @@
 
 namespace ZendPdfTest;
 
+use PHPUnit_Framework_TestCase;
 use ZendPdf as Pdf;
 
 /** \ZendPdf\Page */
@@ -22,7 +23,7 @@ use ZendPdf as Pdf;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class PageFactoryTest extends \PHPUnit_Framework_TestCase
+class PageFactoryTest extends PHPUnit_Framework_TestCase
 {
     public function testNewPageCreator()
     {

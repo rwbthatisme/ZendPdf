@@ -10,12 +10,14 @@
 
 namespace ZendPdfTest;
 
-use ZendPdf\InternalType;
-use ZendPdf\Action;
-use ZendPdf\Util;
-use ZendPdf\ObjectFactory;
+use PHPUnit_Framework_TestCase;
+use RecursiveIteratorIterator;
 use ZendPdf as Pdf;
+use ZendPdf\Action;
 use ZendPdf\Destination;
+use ZendPdf\InternalType;
+use ZendPdf\ObjectFactory;
+use ZendPdf\Util;
 
 /** \ZendPdf\Action */
 
@@ -29,7 +31,7 @@ use ZendPdf\Destination;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class ActionTest extends \PHPUnit_Framework_TestCase
+class ActionTest extends PHPUnit_Framework_TestCase
 {
     /**
      * Stores the original set timezone
@@ -55,116 +57,116 @@ class ActionTest extends \PHPUnit_Framework_TestCase
     {
         $dictionary = new InternalType\DictionaryObject();
         $dictionary->Type = new InternalType\NameObject('Action');
-        $dictionary->S    = new InternalType\NameObject('GoTo');
-        $dictionary->D    = new InternalType\StringObject('SomeNamedDestination');
+        $dictionary->S = new InternalType\NameObject('GoTo');
+        $dictionary->D = new InternalType\StringObject('SomeNamedDestination');
 
         $action2Dictionary = new InternalType\DictionaryObject();
         $action2Dictionary->Type = new InternalType\NameObject('Action');
-        $action2Dictionary->S    = new InternalType\NameObject('Thread');
-        $action2Dictionary->D    = new InternalType\StringObject('NamedDestination 2');
+        $action2Dictionary->S = new InternalType\NameObject('Thread');
+        $action2Dictionary->D = new InternalType\StringObject('NamedDestination 2');
         $action2Dictionary->Next = new InternalType\ArrayObject();
 
         $dictionary->Next = $action2Dictionary;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('GoTo');
-        $leafAction->D    = new InternalType\StringObject('NamedDestination 3');
+        $leafAction->S = new InternalType\NameObject('GoTo');
+        $leafAction->D = new InternalType\StringObject('NamedDestination 3');
         $action2Dictionary->Next->items[] = $leafAction;
 
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('GoToR');
+        $leafAction->S = new InternalType\NameObject('GoToR');
         $action2Dictionary->Next->items[] = $leafAction;
 
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('GoToE');
+        $leafAction->S = new InternalType\NameObject('GoToE');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Launch');
+        $leafAction->S = new InternalType\NameObject('Launch');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Thread');
+        $leafAction->S = new InternalType\NameObject('Thread');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('URI');
-        $leafAction->URI  = new InternalType\NameObject('http://some_host/');
+        $leafAction->S = new InternalType\NameObject('URI');
+        $leafAction->URI = new InternalType\NameObject('http://some_host/');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Sound');
+        $leafAction->S = new InternalType\NameObject('Sound');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Movie');
+        $leafAction->S = new InternalType\NameObject('Movie');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Hide');
+        $leafAction->S = new InternalType\NameObject('Hide');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Named');
+        $leafAction->S = new InternalType\NameObject('Named');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('SubmitForm');
+        $leafAction->S = new InternalType\NameObject('SubmitForm');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('ResetForm');
+        $leafAction->S = new InternalType\NameObject('ResetForm');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('ImportData');
+        $leafAction->S = new InternalType\NameObject('ImportData');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('JavaScript');
+        $leafAction->S = new InternalType\NameObject('JavaScript');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('SetOCGState');
+        $leafAction->S = new InternalType\NameObject('SetOCGState');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Rendition');
+        $leafAction->S = new InternalType\NameObject('Rendition');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Trans');
+        $leafAction->S = new InternalType\NameObject('Trans');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('GoTo3DView');
+        $leafAction->S = new InternalType\NameObject('GoTo3DView');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $action = Action\AbstractAction::load($dictionary);
 
         $actionsCount = 0;
-        $iterator = new \RecursiveIteratorIterator(new Util\RecursivelyIteratableObjectsContainer(array($action)),
-                                                  \RecursiveIteratorIterator::SELF_FIRST);
+        $iterator = new RecursiveIteratorIterator(new Util\RecursivelyIteratableObjectsContainer(array($action)),
+            RecursiveIteratorIterator::SELF_FIRST);
         foreach ($iterator as $chainedAction) {
             $actionsCount++;
         }
@@ -176,119 +178,119 @@ class ActionTest extends \PHPUnit_Framework_TestCase
     {
         $dictionary = new InternalType\DictionaryObject();
         $dictionary->Type = new InternalType\NameObject('Action');
-        $dictionary->S    = new InternalType\NameObject('GoToR');
-        $dictionary->D    = new InternalType\StringObject('SomeNamedDestination');
+        $dictionary->S = new InternalType\NameObject('GoToR');
+        $dictionary->D = new InternalType\StringObject('SomeNamedDestination');
 
         $action2Dictionary = new InternalType\DictionaryObject();
         $action2Dictionary->Type = new InternalType\NameObject('Action');
-        $action2Dictionary->S    = new InternalType\NameObject('Thread');
-        $action2Dictionary->D    = new InternalType\StringObject('NamedDestination 2');
+        $action2Dictionary->S = new InternalType\NameObject('Thread');
+        $action2Dictionary->D = new InternalType\StringObject('NamedDestination 2');
         $action2Dictionary->Next = new InternalType\ArrayObject();
 
         $dictionary->Next = $action2Dictionary;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('GoTo');
-        $leafAction->D    = new InternalType\StringObject('NamedDestination 3');
+        $leafAction->S = new InternalType\NameObject('GoTo');
+        $leafAction->D = new InternalType\StringObject('NamedDestination 3');
         $action2Dictionary->Next->items[] = $leafAction;
 
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('GoToR');
+        $leafAction->S = new InternalType\NameObject('GoToR');
         $action2Dictionary->Next->items[] = $leafAction;
 
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('GoToE');
+        $leafAction->S = new InternalType\NameObject('GoToE');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Launch');
+        $leafAction->S = new InternalType\NameObject('Launch');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Thread');
+        $leafAction->S = new InternalType\NameObject('Thread');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('URI');
-        $leafAction->URI  = new InternalType\NameObject('http://some_host/');
+        $leafAction->S = new InternalType\NameObject('URI');
+        $leafAction->URI = new InternalType\NameObject('http://some_host/');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Sound');
+        $leafAction->S = new InternalType\NameObject('Sound');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Movie');
+        $leafAction->S = new InternalType\NameObject('Movie');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Hide');
+        $leafAction->S = new InternalType\NameObject('Hide');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Named');
+        $leafAction->S = new InternalType\NameObject('Named');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('SubmitForm');
+        $leafAction->S = new InternalType\NameObject('SubmitForm');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('ResetForm');
+        $leafAction->S = new InternalType\NameObject('ResetForm');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('ImportData');
+        $leafAction->S = new InternalType\NameObject('ImportData');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('JavaScript');
+        $leafAction->S = new InternalType\NameObject('JavaScript');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('SetOCGState');
+        $leafAction->S = new InternalType\NameObject('SetOCGState');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Rendition');
+        $leafAction->S = new InternalType\NameObject('Rendition');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('Trans');
+        $leafAction->S = new InternalType\NameObject('Trans');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $leafAction = new InternalType\DictionaryObject();
         $leafAction->Type = new InternalType\NameObject('Action');
-        $leafAction->S    = new InternalType\NameObject('GoTo3DView');
+        $leafAction->S = new InternalType\NameObject('GoTo3DView');
         $action2Dictionary->Next->items[] = $leafAction;
 
         $action = Action\AbstractAction::load($dictionary);
 
-        $actionsToClean        = array();
+        $actionsToClean = array();
         $deletionCandidateKeys = array();
-        $iterator = new \RecursiveIteratorIterator($action, \RecursiveIteratorIterator::SELF_FIRST);
+        $iterator = new RecursiveIteratorIterator($action, RecursiveIteratorIterator::SELF_FIRST);
         foreach ($iterator as $chainedAction) {
             if ($chainedAction instanceof Action\GoToAction) {
-                $actionsToClean[]        = $iterator->getSubIterator();
+                $actionsToClean[] = $iterator->getSubIterator();
                 $deletionCandidateKeys[] = $iterator->getSubIterator()->key();
             }
         }
@@ -296,8 +298,8 @@ class ActionTest extends \PHPUnit_Framework_TestCase
             unset($action->next[$deletionCandidateKeys[$id]]);
         }
         $actionsCount = 0;
-        $iterator = new \RecursiveIteratorIterator(new Util\RecursivelyIteratableObjectsContainer(array($action)),
-                                                  \RecursiveIteratorIterator::SELF_FIRST);
+        $iterator = new RecursiveIteratorIterator(new Util\RecursivelyIteratableObjectsContainer(array($action)),
+            RecursiveIteratorIterator::SELF_FIRST);
         foreach ($iterator as $chainedAction) {
             $actionsCount++;
         }
@@ -320,7 +322,7 @@ class ActionTest extends \PHPUnit_Framework_TestCase
         $action1->dumpAction(new ObjectFactory(1));
 
         $this->assertEquals($action1->getResource()->toString(),
-                            '<</Type /Action /S /GoTo /D (SomeNamedDestination) /Next 1 0 R >>');
+            '<</Type /Action /S /GoTo /D (SomeNamedDestination) /Next 1 0 R >>');
     }
 
     public function testCreate1()
@@ -336,15 +338,15 @@ class ActionTest extends \PHPUnit_Framework_TestCase
         $action->dumpAction(new ObjectFactory(1));
 
         $this->assertEquals($action->getResource()->toString(),
-                            '<</Type /Action /S /GoTo /D [4 0 R /Fit ] >>');
+            '<</Type /Action /S /GoTo /D [4 0 R /Fit ] >>');
     }
 
     public function testGetDestination()
     {
         $dictionary = new InternalType\DictionaryObject();
         $dictionary->Type = new InternalType\NameObject('Action');
-        $dictionary->S    = new InternalType\NameObject('GoTo');
-        $dictionary->D    = new InternalType\StringObject('SomeNamedDestination');
+        $dictionary->S = new InternalType\NameObject('GoTo');
+        $dictionary->D = new InternalType\StringObject('SomeNamedDestination');
 
         $action = Action\AbstractAction::load($dictionary);
 
@@ -372,8 +374,8 @@ class ActionTest extends \PHPUnit_Framework_TestCase
     {
         $dictionary = new InternalType\DictionaryObject();
         $dictionary->Type = new InternalType\NameObject('Action');
-        $dictionary->S    = new InternalType\NameObject('URI');
-        $dictionary->URI  = new InternalType\StringObject('http://somehost/');
+        $dictionary->S = new InternalType\NameObject('URI');
+        $dictionary->URI = new InternalType\StringObject('http://somehost/');
 
         $action = Action\AbstractAction::load($dictionary);
 
@@ -384,7 +386,7 @@ class ActionTest extends \PHPUnit_Framework_TestCase
     {
         $dictionary = new InternalType\DictionaryObject();
         $dictionary->Type = new InternalType\NameObject('Action');
-        $dictionary->S    = new InternalType\NameObject('URI');
+        $dictionary->S = new InternalType\NameObject('URI');
 
 
         $this->setExpectedException('\ZendPdf\Exception\CorruptedPdfException', 'URI action dictionary entry is required');
@@ -399,7 +401,7 @@ class ActionTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($action instanceof Action\URI);
 
         $this->assertEquals($action->getResource()->toString(),
-                            '<</Type /Action /S /URI /URI (http://somehost/) >>');
+            '<</Type /Action /S /URI /URI (http://somehost/) >>');
     }
 
     public function testActionURIGettersSetters()
@@ -416,12 +418,12 @@ class ActionTest extends \PHPUnit_Framework_TestCase
         $action->setIsMap(true);
         $this->assertEquals($action->getIsMap(), true);
         $this->assertEquals($action->getResource()->toString(),
-                            '<</Type /Action /S /URI /URI (http://another_host/) /IsMap true >>');
+            '<</Type /Action /S /URI /URI (http://another_host/) /IsMap true >>');
 
         $action->setIsMap(false);
         $this->assertEquals($action->getIsMap(), false);
         $this->assertEquals($action->getResource()->toString(),
-                            '<</Type /Action /S /URI /URI (http://another_host/) >>');
+            '<</Type /Action /S /URI /URI (http://another_host/) >>');
     }
 
     /**

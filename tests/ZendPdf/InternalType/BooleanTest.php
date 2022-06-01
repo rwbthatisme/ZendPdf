@@ -10,6 +10,7 @@
 
 namespace ZendPdfTest\InternalType;
 
+use PHPUnit_Framework_TestCase;
 use ZendPdf\InternalType;
 
 /**
@@ -26,7 +27,7 @@ use ZendPdf\InternalType;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class BooleanTest extends \PHPUnit_Framework_TestCase
+class BooleanTest extends PHPUnit_Framework_TestCase
 {
     public function testPDFBoolean()
     {
@@ -42,7 +43,7 @@ class BooleanTest extends \PHPUnit_Framework_TestCase
 
     public function testGetType()
     {
-        $boolObj = new InternalType\BooleanObject((boolean) 100);
+        $boolObj = new InternalType\BooleanObject((boolean)100);
         $this->assertEquals($boolObj->getType(), InternalType\AbstractTypeObject::TYPE_BOOL);
     }
 

@@ -10,9 +10,10 @@
 
 namespace ZendPdfTest;
 
+use PHPUnit_Framework_TestCase;
 use ZendPdf as Pdf;
-use ZendPdf\Destination;
 use ZendPdf\Action;
+use ZendPdf\Destination;
 
 /** Zend_PDF */
 
@@ -25,7 +26,7 @@ use ZendPdf\Action;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class NamedDestinationsTest extends \PHPUnit_Framework_TestCase
+class NamedDestinationsTest extends PHPUnit_Framework_TestCase
 {
     /**
      * Stores the original set timezone
@@ -72,7 +73,7 @@ class NamedDestinationsTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($pdf->getNamedDestination('Page2') === $destination2);
         $this->assertTrue($pdf->getNamedDestination('Page9') === null);
 
-        $pdf->setNamedDestination('Page1',   $destination1);
+        $pdf->setNamedDestination('Page1', $destination1);
         $pdf->setNamedDestination('Page1_1', Destination\Fit::create(1));
         $pdf->setNamedDestination('Page9_1', Destination\Fit::create(9)); // will be egnored
 

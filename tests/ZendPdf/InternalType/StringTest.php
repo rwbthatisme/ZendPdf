@@ -10,6 +10,7 @@
 
 namespace ZendPdfTest\InternalType;
 
+use PHPUnit_Framework_TestCase;
 use ZendPdf\InternalType;
 
 
@@ -27,7 +28,7 @@ use ZendPdf\InternalType;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class StringTest extends \PHPUnit_Framework_TestCase
+class StringTest extends PHPUnit_Framework_TestCase
 {
     public function testPDFString()
     {
@@ -44,7 +45,7 @@ class StringTest extends \PHPUnit_Framework_TestCase
     public function testToString()
     {
         $stringObj = new InternalType\StringObject('some text ()');
-        $this->assertEquals($stringObj->toString(), '(some text \\(\\))' );
+        $this->assertEquals($stringObj->toString(), '(some text \\(\\))');
     }
 
     public function testEscape()
@@ -55,7 +56,7 @@ class StringTest extends \PHPUnit_Framework_TestCase
     public function testUnescape()
     {
         $this->assertEquals(InternalType\StringObject::unescape("\\n\\r\\t\\b\\f\\(\\)\\\\  \nsome \\\ntext"),
-                            "\n\r\t\x08\x0C()\\  \nsome text");
+            "\n\r\t\x08\x0C()\\  \nsome text");
     }
 
     /**

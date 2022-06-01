@@ -10,6 +10,7 @@
 
 namespace ZendPdfTest\Filter;
 
+use PHPUnit_Framework_TestCase;
 use ZendPdf\InternalType\StreamFilter;
 
 /**
@@ -26,7 +27,7 @@ use ZendPdf\InternalType\StreamFilter;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class Ascii85Test extends \PHPUnit_Framework_TestCase
+class Ascii85Test extends PHPUnit_Framework_TestCase
 {
     public function testStringDivisibleBy4Encode()
     {
@@ -48,15 +49,15 @@ class Ascii85Test extends \PHPUnit_Framework_TestCase
     {
         $decodedContents = 'Lorem ipsum dolor sit amet, consectetur cras amet.';
         $encodedContents = StreamFilter\Ascii85::encode($decodedContents);
-        $testString  = "9Q+r_D'3P3F*2=BA8c:&EZfF;F<G\"/ATTIG@rH7+ARfgn"
-                     . "FEMUH@rc\"!+CT+uF=m~>";
+        $testString = "9Q+r_D'3P3F*2=BA8c:&EZfF;F<G\"/ATTIG@rH7+ARfgn"
+            . "FEMUH@rc\"!+CT+uF=m~>";
         $this->assertEquals($encodedContents, $testString);
     }
 
     public function testStringNotDivisibleBy4Decode()
     {
         $encodedContents = "9Q+r_D'3P3F*2=BA8c:&EZfF;F<G\"/ATTIG@rH7+ARfgn"
-                         . "FEMUH@rc\"!+CT+uF=m~>";
+            . "FEMUH@rc\"!+CT+uF=m~>";
         $decodedContents = StreamFilter\Ascii85::decode($encodedContents);
         $testString = 'Lorem ipsum dolor sit amet, consectetur cras amet.';
         $this->assertEquals($decodedContents, $testString);

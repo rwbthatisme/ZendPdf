@@ -10,6 +10,7 @@
 
 namespace ZendPdfTest\InternalType\Object;
 
+use PHPUnit_Framework_TestCase;
 use ZendPdf\InternalType;
 use ZendPdf\ObjectFactory;
 
@@ -27,7 +28,7 @@ use ZendPdf\ObjectFactory;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class StreamObjectTest extends \PHPUnit_Framework_TestCase
+class StreamObjectTest extends PHPUnit_Framework_TestCase
 {
     public function testPDFStreamObject()
     {

@@ -10,11 +10,12 @@
 
 namespace ZendPdfTest;
 
+use PHPUnit_Framework_TestCase;
 use ZendPdf as Pdf;
 use ZendPdf\Color;
-use ZendPdf\Resource\Image;
-use ZendPdf\Resource\Font;
 use ZendPdf\InternalType;
+use ZendPdf\Resource\Font;
+use ZendPdf\Resource\Image;
 
 /** \Zend\Pdf */
 
@@ -35,7 +36,7 @@ use ZendPdf\InternalType;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class DrawingTest extends \PHPUnit_Framework_TestCase
+class DrawingTest extends PHPUnit_Framework_TestCase
 {
     /**
      * Stores the original set timezone
@@ -75,127 +76,127 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
 
         // Apply font and draw text
         $page1->setFont($font, 36)
-              ->setFillColor(Color\Html::color('#9999cc'))
-              ->drawText('Helvetica 36 text string', 60, 500);
+            ->setFillColor(Color\Html::color('#9999cc'))
+            ->drawText('Helvetica 36 text string', 60, 500);
 
         // Use font object for another page
         $page2->setFont($font, 24)
-              ->drawText('Helvetica 24 text string', 60, 500);
+            ->drawText('Helvetica 24 text string', 60, 500);
 
         // Use another font
         $page2->setFont(Pdf\Font::fontWithName(Pdf\Font::FONT_TIMES), 32)
-              ->drawText('Times-Roman 32 text string', 60, 450);
+            ->drawText('Times-Roman 32 text string', 60, 450);
 
         // Draw rectangle
         $page2->setFillColor(new Color\GrayScale(0.8))
-              ->setLineColor(new Color\GrayScale(0.2))
-              ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
-              ->drawRectangle(60, 400, 500, 350);
+            ->setLineColor(new Color\GrayScale(0.2))
+            ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
+            ->drawRectangle(60, 400, 500, 350);
 
         // Draw rounded rectangle
         $page2->setFillColor(new Color\GrayScale(0.9))
-              ->setLineColor(new Color\GrayScale(0.5))
-              ->setLineDashingPattern(Pdf\Page::LINE_DASHING_SOLID)
-              ->drawRoundedRectangle(425, 350, 475, 400, 20);
+            ->setLineColor(new Color\GrayScale(0.5))
+            ->setLineDashingPattern(Pdf\Page::LINE_DASHING_SOLID)
+            ->drawRoundedRectangle(425, 350, 475, 400, 20);
 
         // Draw circle
         $page2->setLineDashingPattern(Pdf\Page::LINE_DASHING_SOLID)
-              ->setFillColor(new Color\Rgb(1, 0, 0))
-              ->drawCircle(85, 375, 25);
+            ->setFillColor(new Color\Rgb(1, 0, 0))
+            ->drawCircle(85, 375, 25);
 
         // Draw sectors
-        $page2->drawCircle(200, 375, 25, 2*M_PI/3, -M_PI/6)
-              ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
-              ->drawCircle(200, 375, 25, M_PI/6, 2*M_PI/3)
-              ->setFillColor(new Color\Rgb(1, 1, 0))
-              ->drawCircle(200, 375, 25, -M_PI/6, M_PI/6);
+        $page2->drawCircle(200, 375, 25, 2 * M_PI / 3, -M_PI / 6)
+            ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
+            ->drawCircle(200, 375, 25, M_PI / 6, 2 * M_PI / 3)
+            ->setFillColor(new Color\Rgb(1, 1, 0))
+            ->drawCircle(200, 375, 25, -M_PI / 6, M_PI / 6);
 
         // Draw ellipse
         $page2->setFillColor(new Color\Html('Red'))
-              ->drawEllipse(250, 400, 400, 350)
-              ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
-              ->drawEllipse(250, 400, 400, 350, M_PI/6, 2*M_PI/3)
-              ->setFillColor(new Color\Rgb(1, 1, 0))
-              ->drawEllipse(250, 400, 400, 350, -M_PI/6, M_PI/6);
+            ->drawEllipse(250, 400, 400, 350)
+            ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
+            ->drawEllipse(250, 400, 400, 350, M_PI / 6, 2 * M_PI / 3)
+            ->setFillColor(new Color\Rgb(1, 1, 0))
+            ->drawEllipse(250, 400, 400, 350, -M_PI / 6, M_PI / 6);
 
         // Draw and fill polygon
         $page2->setFillColor(new Color\Rgb(1, 0, 1));
         $x = array();
         $y = array();
         for ($count = 0; $count < 8; $count++) {
-            $x[] = 140 + 25*cos(3*M_PI_4*$count);
-            $y[] = 375 + 25*sin(3*M_PI_4*$count);
+            $x[] = 140 + 25 * cos(3 * M_PI_4 * $count);
+            $y[] = 375 + 25 * sin(3 * M_PI_4 * $count);
         }
         $page2->drawPolygon($x, $y,
-                            Pdf\Page::SHAPE_DRAW_FILL_AND_STROKE,
-                            Pdf\Page::FILL_METHOD_EVEN_ODD);
+            Pdf\Page::SHAPE_DRAW_FILL_AND_STROKE,
+            Pdf\Page::FILL_METHOD_EVEN_ODD);
 
         // Draw line
         $page2->setLineWidth(0.5)
-              ->drawLine(60, 375, 500, 375);
+            ->drawLine(60, 375, 500, 375);
 
         // -----------------------------------------------------------------------------------
         $page3->translate(200, 10)
-              ->rotate(10, 10, M_PI_2/9)
-              ->scale(0.7, 1.2)
-              ->skew(60, 350, M_PI_2/9, -M_PI_2/9);
+            ->rotate(10, 10, M_PI_2 / 9)
+            ->scale(0.7, 1.2)
+            ->skew(60, 350, M_PI_2 / 9, -M_PI_2 / 9);
 
         // Use font object for another page
         $page3->setFont($font, 24)
-              ->drawText('Helvetica 24 text string', 60, 500);
+            ->drawText('Helvetica 24 text string', 60, 500);
 
         // Use another font
         $page3->setFont(Pdf\Font::fontWithName(Pdf\Font::FONT_TIMES), 32)
-              ->drawText('Times-Roman 32 text string', 60, 450);
+            ->drawText('Times-Roman 32 text string', 60, 450);
 
         // Draw rectangle
         $page3->setFillColor(new Color\GrayScale(0.8))
-              ->setLineColor(new Color\GrayScale(0.2))
-              ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
-              ->drawRectangle(60, 400, 500, 350);
+            ->setLineColor(new Color\GrayScale(0.2))
+            ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
+            ->drawRectangle(60, 400, 500, 350);
 
         // Draw rounded rectangle
         $page3->setFillColor(new Color\GrayScale(0.9))
-              ->setLineColor(new Color\GrayScale(0.5))
-              ->setLineDashingPattern(Pdf\Page::LINE_DASHING_SOLID)
-              ->drawRoundedRectangle(425, 350, 475, 400, 20);
+            ->setLineColor(new Color\GrayScale(0.5))
+            ->setLineDashingPattern(Pdf\Page::LINE_DASHING_SOLID)
+            ->drawRoundedRectangle(425, 350, 475, 400, 20);
 
 
         // Draw circle
         $page3->setLineDashingPattern(Pdf\Page::LINE_DASHING_SOLID)
-              ->setFillColor(new Color\Rgb(1, 0, 0))
-              ->drawCircle(85, 375, 25);
+            ->setFillColor(new Color\Rgb(1, 0, 0))
+            ->drawCircle(85, 375, 25);
 
         // Draw sectors
-        $page3->drawCircle(200, 375, 25, 2*M_PI/3, -M_PI/6)
-              ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
-              ->drawCircle(200, 375, 25, M_PI/6, 2*M_PI/3)
-              ->setFillColor(new Color\Rgb(1, 1, 0))
-              ->drawCircle(200, 375, 25, -M_PI/6, M_PI/6);
+        $page3->drawCircle(200, 375, 25, 2 * M_PI / 3, -M_PI / 6)
+            ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
+            ->drawCircle(200, 375, 25, M_PI / 6, 2 * M_PI / 3)
+            ->setFillColor(new Color\Rgb(1, 1, 0))
+            ->drawCircle(200, 375, 25, -M_PI / 6, M_PI / 6);
 
         // Draw ellipse
         $page3->setFillColor(new Color\Html('Red'))
-              ->drawEllipse(250, 400, 400, 350)
-              ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
-              ->drawEllipse(250, 400, 400, 350, M_PI/6, 2*M_PI/3)
-              ->setFillColor(new Color\Rgb(1, 1, 0))
-              ->drawEllipse(250, 400, 400, 350, -M_PI/6, M_PI/6);
+            ->drawEllipse(250, 400, 400, 350)
+            ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
+            ->drawEllipse(250, 400, 400, 350, M_PI / 6, 2 * M_PI / 3)
+            ->setFillColor(new Color\Rgb(1, 1, 0))
+            ->drawEllipse(250, 400, 400, 350, -M_PI / 6, M_PI / 6);
 
         // Draw and fill polygon
         $page3->setFillColor(new Color\Rgb(1, 0, 1));
         $x = array();
         $y = array();
         for ($count = 0; $count < 8; $count++) {
-            $x[] = 140 + 25*cos(3*M_PI_4*$count);
-            $y[] = 375 + 25*sin(3*M_PI_4*$count);
+            $x[] = 140 + 25 * cos(3 * M_PI_4 * $count);
+            $y[] = 375 + 25 * sin(3 * M_PI_4 * $count);
         }
         $page3->drawPolygon($x, $y,
-                            Pdf\Page::SHAPE_DRAW_FILL_AND_STROKE,
-                            Pdf\Page::FILL_METHOD_EVEN_ODD);
+            Pdf\Page::SHAPE_DRAW_FILL_AND_STROKE,
+            Pdf\Page::FILL_METHOD_EVEN_ODD);
 
         // Draw line
         $page3->setLineWidth(0.5)
-              ->drawLine(60, 375, 500, 375);
+            ->drawLine(60, 375, 500, 375);
 
 
         $pdf->save(__DIR__ . '/_files/output.pdf');
@@ -220,18 +221,18 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($stampImagePNG instanceof Image\AbstractImage);
 
         $page->saveGS()
-             ->clipCircle(250, 500, 50)
-             ->drawImage($stampImagePNG, 200, 450, 300, 550)
-             ->restoreGS();
+            ->clipCircle(250, 500, 50)
+            ->drawImage($stampImagePNG, 200, 450, 300, 550)
+            ->restoreGS();
 
 
         $stampImageTIFF = Pdf\Image::imageWithPath(__DIR__ . '/_files/stamp.tif');
         $this->assertTrue($stampImageTIFF instanceof Image\AbstractImage);
 
         $page->saveGS()
-             ->clipCircle(325, 500, 50)
-             ->drawImage($stampImagePNG, 275, 450, 375, 550)
-             ->restoreGS();
+            ->clipCircle(325, 500, 50)
+            ->drawImage($stampImagePNG, 275, 450, 375, 550)
+            ->restoreGS();
 
         $jpegSupported = false;
         if (function_exists('gd_info')) {
@@ -248,15 +249,15 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
             $this->assertTrue($stampImageJPG instanceof Image\AbstractImage);
 
             $page->saveGS()
-                 ->clipCircle(287.5, 440, 50)
-                 ->drawImage($stampImageJPG, 237.5, 390, 337.5, 490)
-                 ->restoreGS();
+                ->clipCircle(287.5, 440, 50)
+                ->drawImage($stampImageJPG, 237.5, 390, 337.5, 490)
+                ->restoreGS();
 
             $page->saveGS()
-                 ->clipCircle(250, 500, 50)
-                 ->clipCircle(287.5, 440, 50)
-                 ->drawImage($stampImagePNG, 200, 450, 300, 550)
-                 ->restoreGS();
+                ->clipCircle(250, 500, 50)
+                ->clipCircle(287.5, 440, 50)
+                ->drawImage($stampImagePNG, 200, 450, 300, 550)
+                ->restoreGS();
         }
 
         $pdf->save(__DIR__ . '/_files/output.pdf');
@@ -278,22 +279,22 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
         $pdf = new Pdf\PdfDocument();
 
         $fontsList = array(Pdf\Font::FONT_COURIER,
-                          Pdf\Font::FONT_COURIER_BOLD,
-                          Pdf\Font::FONT_COURIER_BOLD_ITALIC,
-                          Pdf\Font::FONT_COURIER_BOLD_OBLIQUE,
-                          Pdf\Font::FONT_COURIER_ITALIC,
-                          Pdf\Font::FONT_COURIER_OBLIQUE,
-                          Pdf\Font::FONT_HELVETICA,
-                          Pdf\Font::FONT_HELVETICA_BOLD,
-                          Pdf\Font::FONT_HELVETICA_BOLD_ITALIC,
-                          Pdf\Font::FONT_HELVETICA_BOLD_OBLIQUE,
-                          Pdf\Font::FONT_HELVETICA_ITALIC,
-                          Pdf\Font::FONT_HELVETICA_OBLIQUE,
-                          Pdf\Font::FONT_TIMES,
-                          Pdf\Font::FONT_TIMES_BOLD,
-                          Pdf\Font::FONT_TIMES_BOLD_ITALIC,
-                          Pdf\Font::FONT_TIMES_ITALIC,
-                          Pdf\Font::FONT_TIMES_ROMAN);
+            Pdf\Font::FONT_COURIER_BOLD,
+            Pdf\Font::FONT_COURIER_BOLD_ITALIC,
+            Pdf\Font::FONT_COURIER_BOLD_OBLIQUE,
+            Pdf\Font::FONT_COURIER_ITALIC,
+            Pdf\Font::FONT_COURIER_OBLIQUE,
+            Pdf\Font::FONT_HELVETICA,
+            Pdf\Font::FONT_HELVETICA_BOLD,
+            Pdf\Font::FONT_HELVETICA_BOLD_ITALIC,
+            Pdf\Font::FONT_HELVETICA_BOLD_OBLIQUE,
+            Pdf\Font::FONT_HELVETICA_ITALIC,
+            Pdf\Font::FONT_HELVETICA_OBLIQUE,
+            Pdf\Font::FONT_TIMES,
+            Pdf\Font::FONT_TIMES_BOLD,
+            Pdf\Font::FONT_TIMES_BOLD_ITALIC,
+            Pdf\Font::FONT_TIMES_ITALIC,
+            Pdf\Font::FONT_TIMES_ROMAN);
 
         $titleFont = Pdf\Font::fontWithName(Pdf\Font::FONT_COURIER_BOLD_OBLIQUE);
 
@@ -305,13 +306,13 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
             $this->assertTrue($font instanceof Font\AbstractFont);
 
             $page->setFont($titleFont, 10)
-                 ->drawText($font->getFontName(Pdf\Font::NAME_POSTSCRIPT, 'en') . ':', 100, 400);
+                ->drawText($font->getFontName(Pdf\Font::NAME_POSTSCRIPT, 'en') . ':', 100, 400);
 
             $page->setFont($font, 20);
             $page->drawText("'The quick brown fox jumps over the lazy dog'", 100, 360);
 
             $ascent = $font->getAscent();
-            $this->assertTrue( abs(1 - $font->getCoveredPercentage('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxwz')) < 0.00001 );
+            $this->assertTrue(abs(1 - $font->getCoveredPercentage('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxwz')) < 0.00001);
             $descent = $font->getDescent();
 
             $font->getFontName(Pdf\Font::NAME_FULL, 'en');
@@ -334,8 +335,8 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
             $font->getFontName(Pdf\Font::NAME_LICENSE, 'en');
             $font->getFontName(Pdf\Font::NAME_LICENSE_URL, 'en');
 
-            $type       = $font->getFontType();
-            $lineGap    = $font->getLineGap();
+            $type = $font->getFontType();
+            $lineGap = $font->getLineGap();
             $lineHeight = $font->getLineHeight();
             $this->assertTrue($font->getResource() instanceof InternalType\IndirectObject);
             $font->getStrikePosition();
@@ -346,10 +347,10 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
         }
 
         $nonAlphabeticalPhonts =
-                 array(Pdf\Font::FONT_SYMBOL =>
-                                "\x00\x20\x00\x21\x22\x00\x00\x23\x22\x03\x00\x25\x00\x26\x22\x0b\x00\x28\x00\x29\x22\x17\x00\x2b\x00\x2c\x22\x12\x00\x2e\x00\x2f\x00\x30\x00\x31\x00\x32\x00\x33\x00\x34\x00\x35\x00\x36\x00\x37\x00\x38\x00\x39\x00\x3a\x00\x3b\x00\x3c\x00\x3d\x00\x3e\x00\x3f\x22\x45\x03\x91\x03\x92\x03\xa7\x22\x06\x03\x95\x03\xa6",
-                       Pdf\Font::FONT_ZAPFDINGBATS =>
-                                "\x00\x20\x27\x01\x27\x02\x27\x03\x27\x04\x26\x0e\x27\x06\x27\x07\x27\x08\x27\x09\x26\x1b\x26\x1e\x27\x0c\x27\x0d\x27\x0e\x27\x0f\x27\x10\x27\x11\x27\x12\x27\x13\x27\x14\x27\x15\x27\x16\x27\x17\x27\x18\x27\x19\x27\x1a");
+            array(Pdf\Font::FONT_SYMBOL =>
+                "\x00\x20\x00\x21\x22\x00\x00\x23\x22\x03\x00\x25\x00\x26\x22\x0b\x00\x28\x00\x29\x22\x17\x00\x2b\x00\x2c\x22\x12\x00\x2e\x00\x2f\x00\x30\x00\x31\x00\x32\x00\x33\x00\x34\x00\x35\x00\x36\x00\x37\x00\x38\x00\x39\x00\x3a\x00\x3b\x00\x3c\x00\x3d\x00\x3e\x00\x3f\x22\x45\x03\x91\x03\x92\x03\xa7\x22\x06\x03\x95\x03\xa6",
+                Pdf\Font::FONT_ZAPFDINGBATS =>
+                    "\x00\x20\x27\x01\x27\x02\x27\x03\x27\x04\x26\x0e\x27\x06\x27\x07\x27\x08\x27\x09\x26\x1b\x26\x1e\x27\x0c\x27\x0d\x27\x0e\x27\x0f\x27\x10\x27\x11\x27\x12\x27\x13\x27\x14\x27\x15\x27\x16\x27\x17\x27\x18\x27\x19\x27\x1a");
         foreach ($nonAlphabeticalPhonts as $fontName => $example) {
             // Add new page generated by Zend_PDF object (page is attached to the specified the document)
             $pdf->pages[] = ($page = $pdf->newPage(Pdf\Page::SIZE_A4_LANDSCAPE));
@@ -358,13 +359,13 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
             $this->assertTrue($font instanceof Font\AbstractFont);
 
             $page->setFont($titleFont, 10)
-                 ->drawText($font->getFontName(Pdf\Font::NAME_POSTSCRIPT, 'en') . ':', 100, 400);
+                ->drawText($font->getFontName(Pdf\Font::NAME_POSTSCRIPT, 'en') . ':', 100, 400);
 
             $page->setFont($font, 20)
-                 ->drawText($example, 100, 360, 'UTF-16BE');
+                ->drawText($example, 100, 360, 'UTF-16BE');
 
             $ascent = $font->getAscent();
-            $this->assertTrue( abs(1 - $font->getCoveredPercentage($example, 'UTF-16BE')) < 0.00001 );
+            $this->assertTrue(abs(1 - $font->getCoveredPercentage($example, 'UTF-16BE')) < 0.00001);
             $descent = $font->getDescent();
 
             $font->getFontName(Pdf\Font::NAME_FULL, 'en');
@@ -387,8 +388,8 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
             $font->getFontName(Pdf\Font::NAME_LICENSE, 'en');
             $font->getFontName(Pdf\Font::NAME_LICENSE_URL, 'en');
 
-            $type       = $font->getFontType();
-            $lineGap    = $font->getLineGap();
+            $type = $font->getFontType();
+            $lineGap = $font->getLineGap();
             $lineHeight = $font->getLineHeight();
             $this->assertTrue($font->getResource() instanceof InternalType\IndirectObject);
             $font->getStrikePosition();
@@ -399,15 +400,15 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
         }
 
         $TTFFontsList = array('VeraBd.ttf',
-                              'VeraBI.ttf',
-                              'VeraIt.ttf',
-                              'VeraMoBd.ttf',
-                              'VeraMoBI.ttf',
-                              'VeraMoIt.ttf',
-                              'VeraMono.ttf',
-                              'VeraSeBd.ttf',
-                              'VeraSe.ttf',
-                              'Vera.ttf');
+            'VeraBI.ttf',
+            'VeraIt.ttf',
+            'VeraMoBd.ttf',
+            'VeraMoBI.ttf',
+            'VeraMoIt.ttf',
+            'VeraMono.ttf',
+            'VeraSeBd.ttf',
+            'VeraSe.ttf',
+            'Vera.ttf');
 
         foreach ($TTFFontsList as $fontName) {
             // Add new page generated by Zend_PDF object (page is attached to the specified the document)
@@ -417,13 +418,13 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
             $this->assertTrue($font instanceof Font\AbstractFont);
 
             $page->setFont($titleFont, 10)
-                 ->drawText($font->getFontName(Pdf\Font::NAME_POSTSCRIPT, 'en') . ':', 100, 400);
+                ->drawText($font->getFontName(Pdf\Font::NAME_POSTSCRIPT, 'en') . ':', 100, 400);
 
             $page->setFont($font, 20)
-                 ->drawText("'The quick brown fox jumps over the lazy dog'", 100, 360);
+                ->drawText("'The quick brown fox jumps over the lazy dog'", 100, 360);
 
             $ascent = $font->getAscent();
-            $this->assertTrue( abs(1 - $font->getCoveredPercentage('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxwz')) < 0.00001 );
+            $this->assertTrue(abs(1 - $font->getCoveredPercentage('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxwz')) < 0.00001);
             $descent = $font->getDescent();
 
             $font->getFontName(Pdf\Font::NAME_FULL, 'en');
@@ -446,8 +447,8 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
             $font->getFontName(Pdf\Font::NAME_LICENSE, 'en');
             $font->getFontName(Pdf\Font::NAME_LICENSE_URL, 'en');
 
-            $type       = $font->getFontType();
-            $lineGap    = $font->getLineGap();
+            $type = $font->getFontType();
+            $lineGap = $font->getLineGap();
             $lineHeight = $font->getLineHeight();
             $this->assertTrue($font->getResource() instanceof InternalType\IndirectObject);
             $font->getStrikePosition();
@@ -476,8 +477,8 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
         $pdf = new Pdf\PdfDocument();
 
         $fontsList = array(Pdf\Font::FONT_COURIER,
-                           Pdf\Font::FONT_HELVETICA_BOLD,
-                           Pdf\Font::FONT_TIMES_BOLD_ITALIC);
+            Pdf\Font::FONT_HELVETICA_BOLD,
+            Pdf\Font::FONT_TIMES_BOLD_ITALIC);
 
         foreach ($fontsList as $fontName) {
             // Add new page generated by Zend_PDF object (page is attached to the specified the document)
@@ -485,23 +486,23 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
 
             $font = Pdf\Font::fontWithName($fontName);
             $page->setFont($font, 10)
-                 ->drawText($font->getFontName(Pdf\Font::NAME_POSTSCRIPT, 'en') . ':', 100, 400);
+                ->drawText($font->getFontName(Pdf\Font::NAME_POSTSCRIPT, 'en') . ':', 100, 400);
             $page->setFont($font, 20)
-                 ->drawText("'The quick brown fox jumps over the lazy dog'", 100, 360);
+                ->drawText("'The quick brown fox jumps over the lazy dog'", 100, 360);
 
             $type = $font->getFontType();
         }
 
         $TTFFontsList = array('VeraBd.ttf',
-                              'VeraBI.ttf',
-                              'VeraIt.ttf',
-                              'VeraMoBd.ttf',
-                              'VeraMoBI.ttf',
-                              'VeraMoIt.ttf',
-                              'VeraMono.ttf',
-                              'VeraSeBd.ttf',
-                              'VeraSe.ttf',
-                              'Vera.ttf');
+            'VeraBI.ttf',
+            'VeraIt.ttf',
+            'VeraMoBd.ttf',
+            'VeraMoBI.ttf',
+            'VeraMoIt.ttf',
+            'VeraMono.ttf',
+            'VeraSeBd.ttf',
+            'VeraSe.ttf',
+            'Vera.ttf');
 
         foreach ($TTFFontsList as $fontName) {
             // Add new page generated by Zend_PDF object (page is attached to the specified the document)
@@ -509,9 +510,9 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
 
             $font = Pdf\Font::fontWithPath(__DIR__ . '/_fonts/' . $fontName);
             $page->setFont($font, 10)
-                 ->drawText($font->getFontName(Pdf\Font::NAME_POSTSCRIPT, 'en', 'CP1252') . ':', 100, 400);
+                ->drawText($font->getFontName(Pdf\Font::NAME_POSTSCRIPT, 'en', 'CP1252') . ':', 100, 400);
             $page->setFont($font, 20)
-                 ->drawText("'The quick brown fox jumps over the lazy dog'", 100, 360);
+                ->drawText("'The quick brown fox jumps over the lazy dog'", 100, 360);
             $type = $font->getFontType();
         }
 
@@ -522,36 +523,36 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
 
         $newPages = array();
 
-        $fontList  = array();
+        $fontList = array();
         $fontNames = array();
         foreach ($pdf1->pages as $page) {
             $pageFonts = $page->extractFonts();
             foreach ($pageFonts as $font) {
-                $fontList[]  = $font;
+                $fontList[] = $font;
                 $fontNames[] = $font->getFontName(Pdf\Font::NAME_POSTSCRIPT, 'en', 'UTF-8');
             }
         }
 
         $this->assertEquals(array(Pdf\Font::FONT_COURIER,
-                                  Pdf\Font::FONT_HELVETICA_BOLD,
-                                  Pdf\Font::FONT_TIMES_BOLD_ITALIC,
-                                  'BitstreamVeraSans-Bold',
-                                  'BitstreamVeraSans-BoldOblique',
-                                  'BitstreamVeraSans-Oblique',
-                                  'BitstreamVeraSansMono-Bold',
-                                  'BitstreamVeraSansMono-BoldOb',
-                                  'BitstreamVeraSansMono-Oblique',
-                                  'BitstreamVeraSansMono-Roman',
-                                  'BitstreamVeraSerif-Bold',
-                                  'BitstreamVeraSerif-Roman',
-                                  'BitstreamVeraSans-Roman'),
-                            $fontNames);
+            Pdf\Font::FONT_HELVETICA_BOLD,
+            Pdf\Font::FONT_TIMES_BOLD_ITALIC,
+            'BitstreamVeraSans-Bold',
+            'BitstreamVeraSans-BoldOblique',
+            'BitstreamVeraSans-Oblique',
+            'BitstreamVeraSansMono-Bold',
+            'BitstreamVeraSansMono-BoldOb',
+            'BitstreamVeraSansMono-Oblique',
+            'BitstreamVeraSansMono-Roman',
+            'BitstreamVeraSerif-Bold',
+            'BitstreamVeraSerif-Roman',
+            'BitstreamVeraSans-Roman'),
+            $fontNames);
 
         $pdf1->pages[] = ($page = $pdf1->newPage(Pdf\Page::SIZE_A4));
         $yPosition = 700;
         foreach ($fontList as $font) {
             $page->setFont($font, 15)
-                 ->drawText("The quick brown fox jumps over the lazy dog", 100, $yPosition);
+                ->drawText("The quick brown fox jumps over the lazy dog", 100, $yPosition);
             $yPosition -= 30;
         }
 
@@ -560,19 +561,19 @@ class DrawingTest extends \PHPUnit_Framework_TestCase
             $fontNames1[] = $font->getFontName(Pdf\Font::NAME_POSTSCRIPT, 'en', 'UTF-8');
         }
         $this->assertEquals(array(Pdf\Font::FONT_COURIER,
-                                  Pdf\Font::FONT_HELVETICA_BOLD,
-                                  Pdf\Font::FONT_TIMES_BOLD_ITALIC,
-                                  'BitstreamVeraSans-Bold',
-                                  'BitstreamVeraSans-BoldOblique',
-                                  'BitstreamVeraSans-Oblique',
-                                  'BitstreamVeraSansMono-Bold',
-                                  'BitstreamVeraSansMono-BoldOb',
-                                  'BitstreamVeraSansMono-Oblique',
-                                  'BitstreamVeraSansMono-Roman',
-                                  'BitstreamVeraSerif-Bold',
-                                  'BitstreamVeraSerif-Roman',
-                                  'BitstreamVeraSans-Roman'),
-                            $fontNames1);
+            Pdf\Font::FONT_HELVETICA_BOLD,
+            Pdf\Font::FONT_TIMES_BOLD_ITALIC,
+            'BitstreamVeraSans-Bold',
+            'BitstreamVeraSans-BoldOblique',
+            'BitstreamVeraSans-Oblique',
+            'BitstreamVeraSansMono-Bold',
+            'BitstreamVeraSansMono-BoldOb',
+            'BitstreamVeraSansMono-Oblique',
+            'BitstreamVeraSansMono-Roman',
+            'BitstreamVeraSerif-Bold',
+            'BitstreamVeraSerif-Roman',
+            'BitstreamVeraSans-Roman'),
+            $fontNames1);
 
         $page = reset($pdf1->pages);
         $font = $page->extractFont(Pdf\Font::FONT_COURIER);

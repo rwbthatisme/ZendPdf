@@ -10,6 +10,9 @@
 
 namespace ZendPdfTest;
 
+use DOMDocument;
+use DOMXPath;
+use PHPUnit_Framework_TestCase;
 use ZendPdf as Pdf;
 use ZendPdf\Color;
 
@@ -23,7 +26,7 @@ use ZendPdf\Color;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class ProcessingTest extends \PHPUnit_Framework_TestCase
+class ProcessingTest extends PHPUnit_Framework_TestCase
 {
     /**
      * Stores the original set timezone
@@ -60,64 +63,64 @@ class ProcessingTest extends \PHPUnit_Framework_TestCase
 
         // Apply font and draw text
         $page1->setFont($font, 36)
-              ->setFillColor(Color\Html::color('#9999cc'))
-              ->drawText('Helvetica 36 text string', 60, 500);
+            ->setFillColor(Color\Html::color('#9999cc'))
+            ->drawText('Helvetica 36 text string', 60, 500);
 
         // Use font object for another page
         $page2->setFont($font, 24)
-              ->drawText('Helvetica 24 text string', 60, 500);
+            ->drawText('Helvetica 24 text string', 60, 500);
 
         // Use another font
         $page2->setFont(Pdf\Font::fontWithName(Pdf\Font::FONT_TIMES), 32)
-              ->drawText('Times-Roman 32 text string', 60, 450);
+            ->drawText('Times-Roman 32 text string', 60, 450);
 
         // Draw rectangle
         $page2->setFillColor(new Color\GrayScale(0.8))
-              ->setLineColor(new Color\GrayScale(0.2))
-              ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
-              ->drawRectangle(60, 400, 500, 350);
+            ->setLineColor(new Color\GrayScale(0.2))
+            ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
+            ->drawRectangle(60, 400, 500, 350);
 
         // Draw rounded rectangle
         $page2->setFillColor(new Color\GrayScale(0.9))
-              ->setLineColor(new Color\GrayScale(0.5))
-              ->setLineDashingPattern(Pdf\Page::LINE_DASHING_SOLID)
-              ->drawRoundedRectangle(425, 350, 475, 400, 20);
+            ->setLineColor(new Color\GrayScale(0.5))
+            ->setLineDashingPattern(Pdf\Page::LINE_DASHING_SOLID)
+            ->drawRoundedRectangle(425, 350, 475, 400, 20);
 
         // Draw circle
         $page2->setLineDashingPattern(Pdf\Page::LINE_DASHING_SOLID)
-              ->setFillColor(new Color\Rgb(1, 0, 0))
-              ->drawCircle(85, 375, 25);
+            ->setFillColor(new Color\Rgb(1, 0, 0))
+            ->drawCircle(85, 375, 25);
 
         // Draw sectors
-        $page2->drawCircle(200, 375, 25, 2*M_PI/3, -M_PI/6)
-              ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
-              ->drawCircle(200, 375, 25, M_PI/6, 2*M_PI/3)
-              ->setFillColor(new Color\Rgb(1, 1, 0))
-              ->drawCircle(200, 375, 25, -M_PI/6, M_PI/6);
+        $page2->drawCircle(200, 375, 25, 2 * M_PI / 3, -M_PI / 6)
+            ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
+            ->drawCircle(200, 375, 25, M_PI / 6, 2 * M_PI / 3)
+            ->setFillColor(new Color\Rgb(1, 1, 0))
+            ->drawCircle(200, 375, 25, -M_PI / 6, M_PI / 6);
 
         // Draw ellipse
         $page2->setFillColor(new Color\Rgb(1, 0, 0))
-              ->drawEllipse(250, 400, 400, 350)
-              ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
-              ->drawEllipse(250, 400, 400, 350, M_PI/6, 2*M_PI/3)
-              ->setFillColor(new Color\Rgb(1, 1, 0))
-              ->drawEllipse(250, 400, 400, 350, -M_PI/6, M_PI/6);
+            ->drawEllipse(250, 400, 400, 350)
+            ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
+            ->drawEllipse(250, 400, 400, 350, M_PI / 6, 2 * M_PI / 3)
+            ->setFillColor(new Color\Rgb(1, 1, 0))
+            ->drawEllipse(250, 400, 400, 350, -M_PI / 6, M_PI / 6);
 
         // Draw and fill polygon
         $page2->setFillColor(new Color\Rgb(1, 0, 1));
         $x = array();
         $y = array();
         for ($count = 0; $count < 8; $count++) {
-            $x[] = 140 + 25*cos(3*M_PI_4*$count);
-            $y[] = 375 + 25*sin(3*M_PI_4*$count);
+            $x[] = 140 + 25 * cos(3 * M_PI_4 * $count);
+            $y[] = 375 + 25 * sin(3 * M_PI_4 * $count);
         }
         $page2->drawPolygon($x, $y,
-                            Pdf\Page::SHAPE_DRAW_FILL_AND_STROKE,
-                            Pdf\Page::FILL_METHOD_EVEN_ODD);
+            Pdf\Page::SHAPE_DRAW_FILL_AND_STROKE,
+            Pdf\Page::FILL_METHOD_EVEN_ODD);
 
         // Draw line
         $page2->setLineWidth(0.5)
-              ->drawLine(60, 375, 500, 375);
+            ->drawLine(60, 375, 500, 375);
 
         $pdf->save(__DIR__ . '/_files/output.pdf');
         unset($pdf);
@@ -138,20 +141,20 @@ class ProcessingTest extends \PHPUnit_Framework_TestCase
         $pdf->pages = array_reverse($pdf->pages);
 
         // Mark page as modified
-        foreach ($pdf->pages as $page){
+        foreach ($pdf->pages as $page) {
             $page->saveGS();
 
             // Create new Style
             $page->setFillColor(new Color\Rgb(0, 0, 0.9))
-                 ->setLineColor(new Color\GrayScale(0.2))
-                 ->setLineWidth(3)
-                 ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
-                 ->setFont(Pdf\Font::fontWithName(Pdf\Font::FONT_HELVETICA_BOLD), 32);
+                ->setLineColor(new Color\GrayScale(0.2))
+                ->setLineWidth(3)
+                ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
+                ->setFont(Pdf\Font::fontWithName(Pdf\Font::FONT_HELVETICA_BOLD), 32);
 
 
-            $page->rotate(0, 0, M_PI_2/3)
-                 ->drawText('Modified by Zend Framework!', 150, 0)
-                 ->restoreGS();
+            $page->rotate(0, 0, M_PI_2 / 3)
+                ->drawText('Modified by Zend Framework!', 150, 0)
+                ->restoreGS();
         }
 
 
@@ -166,64 +169,64 @@ class ProcessingTest extends \PHPUnit_Framework_TestCase
 
         // Apply font and draw text
         $page1->setFont($font, 36)
-              ->setFillColor(Color\Html::color('#9999cc'))
-              ->drawText('Helvetica 36 text string', 60, 500);
+            ->setFillColor(Color\Html::color('#9999cc'))
+            ->drawText('Helvetica 36 text string', 60, 500);
 
         // Use font object for another page
         $page2->setFont($font, 24)
-              ->drawText('Helvetica 24 text string', 60, 500);
+            ->drawText('Helvetica 24 text string', 60, 500);
 
         // Use another font
         $page2->setFont(Pdf\Font::fontWithName(Pdf\Font::FONT_TIMES), 32)
-              ->drawText('Times-Roman 32 text string', 60, 450);
+            ->drawText('Times-Roman 32 text string', 60, 450);
 
         // Draw rectangle
         $page2->setFillColor(new Color\GrayScale(0.8))
-              ->setLineColor(new Color\GrayScale(0.2))
-              ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
-              ->drawRectangle(60, 400, 500, 350);
+            ->setLineColor(new Color\GrayScale(0.2))
+            ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
+            ->drawRectangle(60, 400, 500, 350);
 
         // Draw rounded rectangle
         $page2->setFillColor(new Color\GrayScale(0.9))
-              ->setLineColor(new Color\GrayScale(0.5))
-              ->setLineDashingPattern(Pdf\Page::LINE_DASHING_SOLID)
-              ->drawRoundedRectangle(425, 350, 475, 400, 20);
+            ->setLineColor(new Color\GrayScale(0.5))
+            ->setLineDashingPattern(Pdf\Page::LINE_DASHING_SOLID)
+            ->drawRoundedRectangle(425, 350, 475, 400, 20);
 
         // Draw circle
         $page2->setLineDashingPattern(Pdf\Page::LINE_DASHING_SOLID)
-              ->setFillColor(new Color\Rgb(1, 0, 0))
-              ->drawCircle(85, 375, 25);
+            ->setFillColor(new Color\Rgb(1, 0, 0))
+            ->drawCircle(85, 375, 25);
 
         // Draw sectors
-        $page2->drawCircle(200, 375, 25, 2*M_PI/3, -M_PI/6)
-              ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
-              ->drawCircle(200, 375, 25, M_PI/6, 2*M_PI/3)
-              ->setFillColor(new Color\Rgb(1, 1, 0))
-              ->drawCircle(200, 375, 25, -M_PI/6, M_PI/6);
+        $page2->drawCircle(200, 375, 25, 2 * M_PI / 3, -M_PI / 6)
+            ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
+            ->drawCircle(200, 375, 25, M_PI / 6, 2 * M_PI / 3)
+            ->setFillColor(new Color\Rgb(1, 1, 0))
+            ->drawCircle(200, 375, 25, -M_PI / 6, M_PI / 6);
 
         // Draw ellipse
         $page2->setFillColor(new Color\Rgb(1, 0, 0))
-              ->drawEllipse(250, 400, 400, 350)
-              ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
-              ->drawEllipse(250, 400, 400, 350, M_PI/6, 2*M_PI/3)
-              ->setFillColor(new Color\Rgb(1, 1, 0))
-              ->drawEllipse(250, 400, 400, 350, -M_PI/6, M_PI/6);
+            ->drawEllipse(250, 400, 400, 350)
+            ->setFillColor(new Color\Cmyk(1, 0, 0, 0))
+            ->drawEllipse(250, 400, 400, 350, M_PI / 6, 2 * M_PI / 3)
+            ->setFillColor(new Color\Rgb(1, 1, 0))
+            ->drawEllipse(250, 400, 400, 350, -M_PI / 6, M_PI / 6);
 
         // Draw and fill polygon
         $page2->setFillColor(new Color\Rgb(1, 0, 1));
         $x = array();
         $y = array();
         for ($count = 0; $count < 8; $count++) {
-            $x[] = 140 + 25*cos(3*M_PI_4*$count);
-            $y[] = 375 + 25*sin(3*M_PI_4*$count);
+            $x[] = 140 + 25 * cos(3 * M_PI_4 * $count);
+            $y[] = 375 + 25 * sin(3 * M_PI_4 * $count);
         }
         $page2->drawPolygon($x, $y,
-                            Pdf\Page::SHAPE_DRAW_FILL_AND_STROKE,
-                            Pdf\Page::FILL_METHOD_EVEN_ODD);
+            Pdf\Page::SHAPE_DRAW_FILL_AND_STROKE,
+            Pdf\Page::FILL_METHOD_EVEN_ODD);
 
         // Draw line
         $page2->setLineWidth(0.5)
-              ->drawLine(60, 375, 500, 375);
+            ->drawLine(60, 375, 500, 375);
 
         $pdf->save(__DIR__ . '/_files/output.pdf');
 
@@ -246,15 +249,15 @@ class ProcessingTest extends \PHPUnit_Framework_TestCase
 
         $metadata = $pdf->getMetadata();
 
-        $metadataDOM = new \DOMDocument();
+        $metadataDOM = new DOMDocument();
         $metadataDOM->loadXML($metadata);
 
-        $xpath = new \DOMXPath($metadataDOM);
+        $xpath = new DOMXPath($metadataDOM);
         $pdfPreffixNamespaceURI = $xpath->query('/rdf:RDF/rdf:Description')->item(0)->lookupNamespaceURI('pdf');
         $xpath->registerNamespace('pdf', $pdfPreffixNamespaceURI);
 
         $titleNodeset = $xpath->query('/rdf:RDF/rdf:Description/pdf:Title');
-        $titleNode    = $titleNodeset->item(0);
+        $titleNode = $titleNodeset->item(0);
         $this->assertEquals($titleNode->nodeValue, 'PDF as a Standard for Archiving');
 
 
@@ -273,15 +276,15 @@ class ProcessingTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($pdf1->properties['Author'], 'Adobe Systems Incorporated');
         $this->assertEquals($pdf1->properties['New_Property'], 'New property');
 
-        $metadataDOM1 = new \DOMDocument();
+        $metadataDOM1 = new DOMDocument();
         $metadataDOM1->loadXML($metadata);
 
-        $xpath1 = new \DOMXPath($metadataDOM);
+        $xpath1 = new DOMXPath($metadataDOM);
         $pdfPreffixNamespaceURI1 = $xpath1->query('/rdf:RDF/rdf:Description')->item(0)->lookupNamespaceURI('pdf');
         $xpath1->registerNamespace('pdf', $pdfPreffixNamespaceURI1);
 
         $titleNodeset1 = $xpath->query('/rdf:RDF/rdf:Description/pdf:Title');
-        $titleNode1    = $titleNodeset->item(0);
+        $titleNode1 = $titleNodeset->item(0);
         $this->assertEquals($titleNode1->nodeValue, 'PDF as a Standard for Archiving (modified using RDF data)');
         unset($pdf1);
 
@@ -295,7 +298,7 @@ class ProcessingTest extends \PHPUnit_Framework_TestCase
         $srcPageCount = count($pdf->pages);
 
         $outputPageSet = array();
-        foreach ($pdf->pages as $srcPage){
+        foreach ($pdf->pages as $srcPage) {
             $page = new Pdf\Page($srcPage);
 
             $outputPageSet[] = $srcPage;
@@ -305,13 +308,13 @@ class ProcessingTest extends \PHPUnit_Framework_TestCase
 
             // Create new Style
             $page->setFillColor(new Color\Rgb(0, 0, 0.9))
-                 ->setLineColor(new Color\GrayScale(0.2))
-                 ->setLineWidth(3)
-                 ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
-                 ->setFont(Pdf\Font::fontWithName(Pdf\Font::FONT_HELVETICA_BOLD), 32);
+                ->setLineColor(new Color\GrayScale(0.2))
+                ->setLineWidth(3)
+                ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
+                ->setFont(Pdf\Font::fontWithName(Pdf\Font::FONT_HELVETICA_BOLD), 32);
 
 
-            $page->rotate(0, 0, M_PI_2/3);
+            $page->rotate(0, 0, M_PI_2 / 3);
             $page->drawText('Modified by Zend Framework!', 150, 0);
             $page->restoreGS();
         }
@@ -327,7 +330,7 @@ class ProcessingTest extends \PHPUnit_Framework_TestCase
         $pdf1 = Pdf\PdfDocument::load(__DIR__ . '/_files/output.pdf');
 
         $this->assertTrue($pdf1 instanceof Pdf\PdfDocument);
-        $this->assertEquals($srcPageCount*2, count($pdf1->pages));
+        $this->assertEquals($srcPageCount * 2, count($pdf1->pages));
         unset($pdf1);
 
         unlink(__DIR__ . '/_files/output.pdf');
@@ -335,26 +338,26 @@ class ProcessingTest extends \PHPUnit_Framework_TestCase
 
     public function testPageCloning()
     {
-        $pdf  = Pdf\PdfDocument::load(__DIR__ . '/_files/pdfarchiving.pdf');
+        $pdf = Pdf\PdfDocument::load(__DIR__ . '/_files/pdfarchiving.pdf');
         $pdf1 = new Pdf\PdfDocument();
 
         $srcPageCount = count($pdf->pages);
 
         $outputPageSet = array();
-        foreach ($pdf->pages as $srcPage){
+        foreach ($pdf->pages as $srcPage) {
             $page = clone $srcPage;
 
             $page->saveGS();
 
             // Create new Style
             $page->setFillColor(new Color\Rgb(0, 0, 0.9))
-                 ->setLineColor(new Color\GrayScale(0.2))
-                 ->setLineWidth(3)
-                 ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
-                 ->setFont(Pdf\Font::fontWithName(Pdf\Font::FONT_HELVETICA_BOLD), 32);
+                ->setLineColor(new Color\GrayScale(0.2))
+                ->setLineWidth(3)
+                ->setLineDashingPattern(array(3, 2, 3, 4), 1.6)
+                ->setFont(Pdf\Font::fontWithName(Pdf\Font::FONT_HELVETICA_BOLD), 32);
 
 
-            $page->rotate(0, 0, M_PI_2/3);
+            $page->rotate(0, 0, M_PI_2 / 3);
             $page->drawText('Modified by Zend Framework!', 150, 0);
             $page->restoreGS();
 
@@ -397,16 +400,17 @@ class ExtendedZendPDF extends Pdf\PdfDocument
 {
     public function __get($name)
     {
-        if(isset($this->$name)) {
+        if (isset($this->$name)) {
             return $this->$name;
         }
     }
 }
+
 class ExtendedZendPDFPage extends Pdf\Page
 {
     public function __get($name)
     {
-        if(isset($this->$name)) {
+        if (isset($this->$name)) {
             return $this->$name;
         }
     }

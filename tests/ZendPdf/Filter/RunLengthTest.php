@@ -10,6 +10,7 @@
 
 namespace ZendPdfTest\Filter;
 
+use PHPUnit_Framework_TestCase;
 use ZendPdf\InternalType\StreamFilter;
 
 /**
@@ -26,45 +27,45 @@ use ZendPdf\InternalType\StreamFilter;
  * @subpackage UnitTests
  * @group      Zend_PDF
  */
-class RunLengthTest extends \PHPUnit_Framework_TestCase
+class RunLengthTest extends PHPUnit_Framework_TestCase
 {
     public function testSimpleStringEncode()
     {
-        $decodedContents  = 'WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWW'
-                          . 'WWWWWWWWWWWWWWWWWWWWBWWWWWWWWWWWWWW';
+        $decodedContents = 'WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWW'
+            . 'WWWWWWWWWWWWWWWWWWWWBWWWWWWWWWWWWWW';
         $encodedContents = StreamFilter\RunLength::encode($decodedContents);
-        $testString  = "\xF5W\x00B\xF5W\xFEB\xE9W\x00B\xF3W\x80";
+        $testString = "\xF5W\x00B\xF5W\xFEB\xE9W\x00B\xF3W\x80";
         $this->assertEquals($encodedContents, $testString);
     }
 
     public function testSimpleStringDecode()
     {
-        $encodedContents  = "\xF5W\x00B\xF5W\xFEB\xE9W\x00B\xF3W\x80";
+        $encodedContents = "\xF5W\x00B\xF5W\xFEB\xE9W\x00B\xF3W\x80";
         $decodedContents = StreamFilter\RunLength::decode($encodedContents);
-        $testString  = 'WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWW'
-                     . 'WWWWWWWWWWWWWWWWWWWWBWWWWWWWWWWWWWW';
+        $testString = 'WWWWWWWWWWWWBWWWWWWWWWWWWBBBWWWW'
+            . 'WWWWWWWWWWWWWWWWWWWWBWWWWWWWWWWWWWW';
         $this->assertEquals($decodedContents, $testString);
     }
 
     public function testRepeatBytesLongerThan128BytesEncode()
     {
-        $decodedContents  = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-                          . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-                          . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-                          . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-                          . 'AAAAAAAAAAAAAAAAAAAAAABBBCDEFFFF';
+        $decodedContents = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            . 'AAAAAAAAAAAAAAAAAAAAAABBBCDEFFFF';
         $encodedContents = StreamFilter\RunLength::encode($decodedContents);
-        $testString  = "\x81A\xEBA\xFEB\x02CDE\xFDF\x80";
+        $testString = "\x81A\xEBA\xFEB\x02CDE\xFDF\x80";
         $this->assertEquals($encodedContents, $testString);
     }
 
     public function testRepeatBytesLongerThan128BytesDecode()
     {
-        $testString  = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-                     . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-                     . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-                     . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-                     . 'AAAAAAAAAAAAAAAAAAAAAABBBCDEFFFF';
+        $testString = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            . 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            . 'AAAAAAAAAAAAAAAAAAAAAABBBCDEFFFF';
 
         $encodedContents = "\x81A\xEBA\xFEB\x00C\x00D\x00E\xFDF\x80";
         $this->assertEquals(StreamFilter\RunLength::decode($encodedContents), $testString);
