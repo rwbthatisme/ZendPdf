@@ -11,7 +11,10 @@
 namespace ZendPdf\Resource\Font\CidFont;
 
 use ZendPdf as Pdf;
+use ZendPdf\BinaryParser\Font\OpenType\AbstractOpenType;
+use ZendPdf\Cmap\AbstractCmap;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
 use ZendPdf\Resource\Font as FontResource;
 
@@ -40,7 +43,7 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
 {
     /**
      * Object representing the font's cmap (character to glyph map).
-     * @var \ZendPdf\Cmap\AbstractCmap
+     * @var AbstractCmap
      */
     protected $_cmap = null;
 
@@ -62,12 +65,12 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
     /**
      * Object constructor
      *
-     * @param \ZendPdf\BinaryParser\Font\OpenType\AbstractOpenType $fontParser Font parser object
+     * @param AbstractOpenType $fontParser Font parser object
      *   containing OpenType file.
      * @param integer $embeddingOptions Options for font embedding.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
-    public function __construct(Pdf\BinaryParser\Font\OpenType\AbstractOpenType $fontParser)
+    public function __construct(AbstractOpenType $fontParser)
     {
         parent::__construct();
 
@@ -78,18 +81,18 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
 
         $this->_fontNames = $fontParser->names;
 
-        $this->_isBold       = $fontParser->isBold;
-        $this->_isItalic     = $fontParser->isItalic;
+        $this->_isBold = $fontParser->isBold;
+        $this->_isItalic = $fontParser->isItalic;
         $this->_isMonospaced = $fontParser->isMonospaced;
 
-        $this->_underlinePosition  = $fontParser->underlinePosition;
+        $this->_underlinePosition = $fontParser->underlinePosition;
         $this->_underlineThickness = $fontParser->underlineThickness;
-        $this->_strikePosition     = $fontParser->strikePosition;
-        $this->_strikeThickness    = $fontParser->strikeThickness;
+        $this->_strikePosition = $fontParser->strikePosition;
+        $this->_strikeThickness = $fontParser->strikeThickness;
 
         $this->_unitsPerEm = $fontParser->unitsPerEm;
 
-        $this->_ascent  = $fontParser->ascent;
+        $this->_ascent = $fontParser->ascent;
         $this->_descent = $fontParser->descent;
         $this->_lineGap = $fontParser->lineGap;
 
@@ -108,21 +111,21 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
          */
         /* Constract characters widths array using font CMap and glyphs widths array */
         $glyphWidths = $fontParser->glyphWidths;
-        $charGlyphs  = $this->_cmap->getCoveredCharactersGlyphs();
-        $charWidths  = array();
+        $charGlyphs = $this->_cmap->getCoveredCharactersGlyphs();
+        $charWidths = array();
         foreach ($charGlyphs as $charCode => $glyph) {
             $charWidths[$charCode] = $glyphWidths[$glyph];
         }
-        $this->_charWidths       = $charWidths;
+        $this->_charWidths = $charWidths;
         $this->_missingCharWidth = $glyphWidths[0];
 
         /* Width array optimization. Step1: extract default value */
         $widthFrequencies = array_count_values($charWidths);
-        $defaultWidth          = null;
+        $defaultWidth = null;
         $defaultWidthFrequency = -1;
         foreach ($widthFrequencies as $width => $frequency) {
             if ($frequency > $defaultWidthFrequency) {
-                $defaultWidth          = $width;
+                $defaultWidth = $width;
                 $defaultWidthFrequency = $frequency;
             }
         }
@@ -163,8 +166,8 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
         $pdfCharsWidths = array();
         foreach ($widthsSequences as $startCode => $widthsSequence) {
             /* Width array optimization. Step3: Compact widths sequences */
-            $pdfWidths        = array();
-            $lastWidth        = -1;
+            $pdfWidths = array();
+            $lastWidth = -1;
             $widthsInSequence = 0;
             foreach ($widthsSequence as $width) {
                 if ($lastWidth != $width) {
@@ -218,7 +221,7 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
                 // Save it as 'c_1st [w1 w2 ... wn]'.
                 $pdfCharsWidths[] = new InternalType\NumericObject($startCode); // First character code
                 $pdfCharsWidths[] = new InternalType\ArrayObject($pdfWidths);   // Widths array
-            } elseif ($widthsInSequence != 0){
+            } elseif ($widthsInSequence != 0) {
                 // We have widths sequence
                 // Save it as 'c_1st c_last w'.
                 $pdfCharsWidths[] = new InternalType\NumericObject($startCode);                         // First character code
@@ -237,13 +240,12 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
 
         /* CIDSystemInfo dictionary */
         $cidSystemInfo = new InternalType\DictionaryObject();
-        $cidSystemInfo->Registry   = new InternalType\StringObject('Adobe');
-        $cidSystemInfo->Ordering   = new InternalType\StringObject('UCS');
+        $cidSystemInfo->Registry = new InternalType\StringObject('Adobe');
+        $cidSystemInfo->Ordering = new InternalType\StringObject('UCS');
         $cidSystemInfo->Supplement = new InternalType\NumericObject(0);
         $cidSystemInfoObject = $this->_objectFactory->newObject($cidSystemInfo);
         $this->_resource->CIDSystemInfo = $cidSystemInfoObject;
     }
-
 
 
     /**
@@ -256,7 +258,7 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
      *
      * @param array $characterCodes Array of Unicode character codes (code points).
      * @return array Array of glyph numbers.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function glyphNumbersForCharacters($characterCodes)
     {
@@ -281,7 +283,7 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
      *
      * @param integer $characterCode Unicode character code (code point).
      * @return integer Glyph number.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function glyphNumberForCharacter($characterCode)
     {
@@ -391,7 +393,7 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
      *
      * @param array &$glyphNumbers Array of glyph numbers.
      * @return array Array of glyph widths (integers).
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function widthsForGlyphs($glyphNumbers)
     {
@@ -412,7 +414,7 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
      *
      * @param integer $glyphNumber
      * @return integer
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function widthForGlyph($glyphNumber)
     {
@@ -432,7 +434,7 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
      * @param string $string
      * @param string $charEncoding Character encoding of source text.
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function encodeString($string, $charEncoding)
     {
@@ -452,7 +454,7 @@ abstract class AbstractCidFont extends FontResource\AbstractFont
      * @param string $string
      * @param string $charEncoding Character encoding of resulting text.
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function decodeString($string, $charEncoding)
     {

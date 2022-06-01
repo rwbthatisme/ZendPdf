@@ -10,9 +10,9 @@
 
 namespace ZendPdf\BinaryParser\DataSource;
 
-use ZendPdf as Pdf;
-use ZendPdf\Exception;
 use Zend\Stdlib\ErrorHandler;
+use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * Concrete subclass of {@link \ZendPdf\BinaryParser\DataSource\AbstractDataSource}
@@ -43,7 +43,6 @@ class File extends AbstractDataSource
     protected $_fileResource = null;
 
 
-
     /**** Public Interface ****/
 
 
@@ -58,14 +57,14 @@ class File extends AbstractDataSource
      * Throws an exception if the file is missing or cannot be opened.
      *
      * @param string $filePath Fully-qualified path to the file.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct($filePath)
     {
-        if (! (is_file($filePath) || is_link($filePath))) {
+        if (!(is_file($filePath) || is_link($filePath))) {
             throw new Exception\IOException('Invalid file path: ' . $filePath);
         }
-        if (! is_readable($filePath)) {
+        if (!is_readable($filePath)) {
             throw new Exception\IOException('File is not readable: ' . $filePath);
         }
         if (($this->_size = @filesize($filePath)) === false) {
@@ -102,7 +101,7 @@ class File extends AbstractDataSource
      *
      * @param integer $byteCount Number of bytes to read.
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function readBytes($byteCount)
     {
@@ -152,7 +151,7 @@ class File extends AbstractDataSource
      * moved beyond EOF (end of file).
      *
      * @param integer $offset Destination byte offset.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function moveToOffset($offset)
     {

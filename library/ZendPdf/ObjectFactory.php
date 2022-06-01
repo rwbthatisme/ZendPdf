@@ -10,9 +10,12 @@
 
 namespace ZendPdf;
 
-use ZendPdf as Pdf;
+use SplObjectStorage;
 use ZendPdf\Exception;
-use ZendPdf\InternalType;
+use ZendPdf\Exception\ExceptionInterface;
+use ZendPdf\InternalType\AbstractTypeObject;
+use ZendPdf\InternalType\IndirectObject;
+use ZendPdf\InternalType\StreamObject;
 use ZendPdf\ObjectFactory\UpdateInfoContainer;
 
 /**
@@ -25,6 +28,12 @@ use ZendPdf\ObjectFactory\UpdateInfoContainer;
 class ObjectFactory
 {
     /**
+     * Identity, used for factory id generation
+     *
+     * @var integer
+     */
+    private static $_identity = 0;
+    /**
      * List of the modified objects.
      * Also contains new and removed objects
      *
@@ -32,8 +41,7 @@ class ObjectFactory
      *
      * @var array
      */
-    private $_modifiedObjects = array();
-
+    private $_modifiedObjects = [];
     /**
      * List of the removed objects
      *
@@ -42,7 +50,6 @@ class ObjectFactory
      * @var SplObjectStorage
      */
     private $_removedObjects;
-
     /**
      * List of registered objects.
      * Used for resources clean up when factory is destroyed.
@@ -51,8 +58,7 @@ class ObjectFactory
      *
      * @var array
      */
-    private $_registeredObjects = array();
-
+    private $_registeredObjects = [];
     /**
      * PDF object counter.
      * Actually it's an object number for new PDF object
@@ -60,38 +66,25 @@ class ObjectFactory
      * @var integer
      */
     private $_objectCount;
-
-
     /**
      * List of the attached object factories.
      * Array of \ZendPdf\ObjectFactory objects
      *
      * @var array
      */
-    private $_attachedFactories = array();
-
-
+    private $_attachedFactories = [];
     /**
      * Factory internal id
      *
      * @var integer
      */
     private $_factoryId;
-
-    /**
-     * Identity, used for factory id generation
-     *
-     * @var integer
-     */
-    private static $_identity = 0;
-
-
     /**
      * Internal cache to save calculated shifts
      *
      * @var array
      */
-    private $_shiftCalculationCache = array();
+    private $_shiftCalculationCache = [];
 
 
     /**
@@ -101,9 +94,9 @@ class ObjectFactory
      */
     public function __construct($objCount)
     {
-        $this->_objectCount    = (int)$objCount;
-        $this->_factoryId      = self::$_identity++;
-        $this->_removedObjects = new \SplObjectStorage();
+        $this->_objectCount = (int)$objCount;
+        $this->_factoryId = self::$_identity++;
+        $this->_removedObjects = new SplObjectStorage();
     }
 
 
@@ -111,7 +104,7 @@ class ObjectFactory
      * Factory generator
      *
      * @param integer $objCount
-     * @return \ZendPdf\ObjectFactory
+     * @return ObjectFactory
      */
     public static function createFactory($objCount)
     {
@@ -125,34 +118,14 @@ class ObjectFactory
      */
     public function close()
     {
-        $this->_modifiedObjects   = null;
-        $this->_removedObjects    = null;
+        $this->_modifiedObjects = null;
+        $this->_removedObjects = null;
         $this->_attachedFactories = null;
 
         foreach ($this->_registeredObjects as $obj) {
             $obj->cleanUp();
         }
         $this->_registeredObjects = null;
-    }
-
-    /**
-     * Get factory ID
-     *
-     * @return integer
-     */
-    public function getId()
-    {
-        return $this->_factoryId;
-    }
-
-    /**
-     * Set object counter
-     *
-     * @param integer $objCount
-     */
-    public function setObjectCount($objCount)
-    {
-        $this->_objectCount = (int)$objCount;
     }
 
     /**
@@ -171,15 +144,24 @@ class ObjectFactory
         return $count;
     }
 
+    /**
+     * Set object counter
+     *
+     * @param integer $objCount
+     */
+    public function setObjectCount($objCount)
+    {
+        $this->_objectCount = (int)$objCount;
+    }
 
     /**
      * Attach factory to the current;
      *
-     * @param \ZendPdf\ObjectFactory $factory
+     * @param ObjectFactory $factory
      */
     public function attach(ObjectFactory $factory)
     {
-        if ( $factory === $this || isset($this->_attachedFactories[$factory->getId()])) {
+        if ($factory === $this || isset($this->_attachedFactories[$factory->getId()])) {
             /**
              * Don't attach factory twice.
              * We do not check recusively because of nature of attach operation
@@ -192,11 +174,149 @@ class ObjectFactory
         $this->_attachedFactories[$factory->getId()] = $factory;
     }
 
+    /**
+     * Get factory ID
+     *
+     * @return integer
+     */
+    public function getId()
+    {
+        return $this->_factoryId;
+    }
+
+    /**
+     * Clean enumeration shift cache.
+     * Has to be used after PDF render operation to let followed updates be correct.
+     */
+    public function cleanEnumerationShiftCache()
+    {
+        $this->_shiftCalculationCache = [];
+
+        foreach ($this->_attachedFactories as $attached) {
+            $attached->cleanEnumerationShiftCache();
+        }
+    }
+
+    /**
+     * Mark object as modified in context of current factory.
+     *
+     * @param IndirectObject $obj
+     * @throws ExceptionInterface
+     */
+    public function markAsModified(IndirectObject $obj)
+    {
+        if ($obj->getFactory() !== $this) {
+            throw new Exception\RuntimeException('Object is not generated by this factory');
+        }
+
+        $this->_modifiedObjects[$obj->getObjNum()] = $obj;
+    }
+
+    /**
+     * Remove object in context of current factory.
+     *
+     * @param IndirectObject $obj
+     * @throws ExceptionInterface
+     */
+    public function remove(IndirectObject $obj)
+    {
+        if (!$obj->compareFactory($this)) {
+            throw new Exception\RuntimeException('Object is not generated by this factory');
+        }
+
+        $this->_modifiedObjects[$obj->getObjNum()] = $obj;
+        $this->_removedObjects->attach($obj);
+    }
+
+    /**
+     * Generate new \ZendPdf\InternalType\IndirectObject
+     *
+     * @todo Reusage of the freed object. It's not a support of new feature, but only improvement.
+     *
+     * @param AbstractTypeObject $objectValue
+     * @return IndirectObject
+     */
+    public function newObject(AbstractTypeObject $objectValue)
+    {
+        $obj = new IndirectObject($objectValue, $this->_objectCount++, 0, $this);
+        $this->_modifiedObjects[$obj->getObjNum()] = $obj;
+        return $obj;
+    }
+
+    /**
+     * Generate new \ZendPdf\InternalType\StreamObject
+     *
+     * @todo Reusage of the freed object. It's not a support of new feature, but only improvement.
+     *
+     * @param mixed $objectValue
+     * @return StreamObject
+     */
+    public function newStreamObject($streamValue)
+    {
+        $obj = new StreamObject($streamValue, $this->_objectCount++, 0, $this);
+        $this->_modifiedObjects[$obj->getObjNum()] = $obj;
+        return $obj;
+    }
+
+    /**
+     * Enumerate modified objects.
+     * Returns array of \ZendPdf\ObjectFactory\UpdateInfoContainer
+     *
+     * @param ObjectFactory $rootFactory
+     * @return array
+     */
+    public function listModifiedObjects($rootFactory = null)
+    {
+        if ($rootFactory == null) {
+            $rootFactory = $this;
+            $shift = 0;
+        } else {
+            $shift = $rootFactory->getEnumerationShift($this);
+        }
+
+        ksort($this->_modifiedObjects);
+
+        $result = [];
+        foreach ($this->_modifiedObjects as $objNum => $obj) {
+            if ($this->_removedObjects->contains($obj)) {
+                $result[$objNum + $shift] = new UpdateInfoContainer($objNum + $shift,
+                    $obj->getGenNum() + 1,
+                    true);
+            } else {
+                $result[$objNum + $shift] = new UpdateInfoContainer($objNum + $shift,
+                    $obj->getGenNum(),
+                    false,
+                    $obj->dump($rootFactory));
+            }
+        }
+
+        foreach ($this->_attachedFactories as $factory) {
+            $result += $factory->listModifiedObjects($rootFactory);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Retrive object enumeration shift.
+     *
+     * @param ObjectFactory $factory
+     * @return integer
+     * @throws ExceptionInterface
+     */
+    public function getEnumerationShift(ObjectFactory $factory)
+    {
+        if (($shift = $this->calculateShift($factory)) == -1) {
+            throw new Exception\RuntimeException('Wrong object context');
+        }
+
+        return $shift;
+    }
 
     /**
      * Calculate object enumeration shift.
      *
-     * @param \ZendPdf\ObjectFactory $factory
+     * @param ObjectFactory $factory
      * @return integer
      */
     public function calculateShift(ObjectFactory $factory)
@@ -219,7 +339,7 @@ class ObjectFactory
                 $this->_shiftCalculationCache[$factory->_factoryId] = $shift + $subFactoryShift;
                 return $shift + $subFactoryShift;
             } else {
-                $shift += $subFactory->getObjectCount()-1;
+                $shift += $subFactory->getObjectCount() - 1;
             }
         }
 
@@ -228,146 +348,14 @@ class ObjectFactory
     }
 
     /**
-     * Clean enumeration shift cache.
-     * Has to be used after PDF render operation to let followed updates be correct.
-     */
-    public function cleanEnumerationShiftCache()
-    {
-        $this->_shiftCalculationCache = array();
-
-        foreach ($this->_attachedFactories as $attached) {
-            $attached->cleanEnumerationShiftCache();
-        }
-    }
-
-    /**
-     * Retrive object enumeration shift.
-     *
-     * @param \ZendPdf\ObjectFactory $factory
-     * @return integer
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    public function getEnumerationShift(ObjectFactory $factory)
-    {
-        if (($shift = $this->calculateShift($factory)) == -1) {
-            throw new Exception\RuntimeException('Wrong object context');
-        }
-
-        return $shift;
-    }
-
-    /**
-     * Mark object as modified in context of current factory.
-     *
-     * @param \ZendPdf\InternalType\IndirectObject $obj
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    public function markAsModified(InternalType\IndirectObject $obj)
-    {
-        if ($obj->getFactory() !== $this) {
-            throw new Exception\RuntimeException('Object is not generated by this factory');
-        }
-
-        $this->_modifiedObjects[$obj->getObjNum()] = $obj;
-    }
-
-
-    /**
-     * Remove object in context of current factory.
-     *
-     * @param \ZendPdf\InternalType\IndirectObject $obj
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    public function remove(InternalType\IndirectObject $obj)
-    {
-        if (!$obj->compareFactory($this)) {
-            throw new Exception\RuntimeException('Object is not generated by this factory');
-        }
-
-        $this->_modifiedObjects[$obj->getObjNum()] = $obj;
-        $this->_removedObjects->attach($obj);
-    }
-
-
-    /**
-     * Generate new \ZendPdf\InternalType\IndirectObject
-     *
-     * @todo Reusage of the freed object. It's not a support of new feature, but only improvement.
-     *
-     * @param \ZendPdf\InternalType\AbstractTypeObject $objectValue
-     * @return \ZendPdf\InternalType\IndirectObject
-     */
-    public function newObject(InternalType\AbstractTypeObject $objectValue)
-    {
-        $obj = new InternalType\IndirectObject($objectValue, $this->_objectCount++, 0, $this);
-        $this->_modifiedObjects[$obj->getObjNum()] = $obj;
-        return $obj;
-    }
-
-    /**
-     * Generate new \ZendPdf\InternalType\StreamObject
-     *
-     * @todo Reusage of the freed object. It's not a support of new feature, but only improvement.
-     *
-     * @param mixed $objectValue
-     * @return \ZendPdf\InternalType\StreamObject
-     */
-    public function newStreamObject($streamValue)
-    {
-        $obj = new InternalType\StreamObject($streamValue, $this->_objectCount++, 0, $this);
-        $this->_modifiedObjects[$obj->getObjNum()] = $obj;
-        return $obj;
-    }
-
-
-    /**
-     * Enumerate modified objects.
-     * Returns array of \ZendPdf\ObjectFactory\UpdateInfoContainer
-     *
-     * @param \ZendPdf\ObjectFactory $rootFactory
-     * @return array
-     */
-    public function listModifiedObjects($rootFactory = null)
-    {
-        if ($rootFactory == null) {
-            $rootFactory = $this;
-            $shift = 0;
-        } else {
-            $shift = $rootFactory->getEnumerationShift($this);
-        }
-
-        ksort($this->_modifiedObjects);
-
-        $result = array();
-        foreach ($this->_modifiedObjects as $objNum => $obj) {
-            if ($this->_removedObjects->contains($obj)) {
-                            $result[$objNum+$shift] = new UpdateInfoContainer($objNum + $shift,
-                                                                              $obj->getGenNum()+1,
-                                                                              true);
-            } else {
-                $result[$objNum+$shift] = new UpdateInfoContainer($objNum + $shift,
-                                                                  $obj->getGenNum(),
-                                                                  false,
-                                                                  $obj->dump($rootFactory));
-            }
-        }
-
-        foreach ($this->_attachedFactories as $factory) {
-            $result += $factory->listModifiedObjects($rootFactory);
-        }
-
-        return $result;
-    }
-
-    /**
      * Register object in the factory
      *
      * It's used to clear "parent object" referencies when factory is closed and clean up resources
      *
      * @param string $refString
-     * @param \ZendPdf\InternalType\IndirectObject $obj
+     * @param IndirectObject $obj
      */
-    public function registerObject(InternalType\IndirectObject $obj, $refString)
+    public function registerObject(IndirectObject $obj, $refString)
     {
         $this->_registeredObjects[$refString] = $obj;
     }
@@ -376,7 +364,7 @@ class ObjectFactory
      * Fetch object specified by reference
      *
      * @param string $refString
-     * @return \ZendPdf\InternalType\IndirectObject|null
+     * @return IndirectObject|null
      */
     public function fetchObject($refString)
     {

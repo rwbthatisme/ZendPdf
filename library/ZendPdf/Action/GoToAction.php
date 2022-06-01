@@ -10,10 +10,12 @@
 
 namespace ZendPdf\Action;
 
-use ZendPdf as Pdf;
+use SplObjectStorage;
 use ZendPdf\Destination;
+use ZendPdf\Destination\AbstractDestination;
 use ZendPdf\Exception;
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\DictionaryObject;
 
 /**
  * PDF 'Go to' action
@@ -26,7 +28,7 @@ class GoToAction extends AbstractAction
     /**
      * GoTo Action destination
      *
-     * @var \ZendPdf\Destination\AbstractDestination
+     * @var AbstractDestination
      */
     protected $_destination;
 
@@ -34,22 +36,22 @@ class GoToAction extends AbstractAction
     /**
      * Object constructor
      *
-     * @param \ZendPdf\InternalType\DictionaryObject $dictionary
-     * @param SplObjectStorage    $processedActions  list of already processed action dictionaries,
+     * @param DictionaryObject $dictionary
+     * @param SplObjectStorage $processedActions list of already processed action dictionaries,
      *                                               used to avoid cyclic references
      */
-    public function __construct(InternalType\AbstractTypeObject $dictionary, \SplObjectStorage $processedActions)
+    public function __construct(InternalType\AbstractTypeObject $dictionary, SplObjectStorage $processedActions)
     {
         parent::__construct($dictionary, $processedActions);
 
-        $this->_destination = Destination\AbstractDestination::load($dictionary->D);
+        $this->_destination = AbstractDestination::load($dictionary->D);
     }
 
     /**
      * Create new \ZendPdf\Action\GoToAction object using specified destination
      *
-     * @param \ZendPdf\Destination\AbstractDestination|string $destination
-     * @return \ZendPdf\Action\GoToAction
+     * @param AbstractDestination|string $destination
+     * @return GoToAction
      */
     public static function create($destination)
     {
@@ -57,26 +59,36 @@ class GoToAction extends AbstractAction
             $destination = Destination\Named::create($destination);
         }
 
-        if (!$destination instanceof Destination\AbstractDestination) {
+        if (!$destination instanceof AbstractDestination) {
             throw new Exception\InvalidArgumentException('$destination parameter must be a \ZendPdf\Destination object or string.');
         }
 
-        $dictionary       = new InternalType\DictionaryObject();
+        $dictionary = new DictionaryObject();
         $dictionary->Type = new InternalType\NameObject('Action');
-        $dictionary->S    = new InternalType\NameObject('GoTo');
+        $dictionary->S = new InternalType\NameObject('GoTo');
         $dictionary->Next = null;
-        $dictionary->D    = $destination->getResource();
+        $dictionary->D = $destination->getResource();
 
-        return new self($dictionary, new \SplObjectStorage());
+        return new self($dictionary, new SplObjectStorage());
+    }
+
+    /**
+     * Get goto action destination
+     *
+     * @return AbstractDestination
+     */
+    public function getDestination()
+    {
+        return $this->_destination;
     }
 
     /**
      * Set goto action destination
      *
-     * @param \ZendPdf\Destination\AbstractDestination|string $destination
-     * @return \ZendPdf\Action\GoToAction
+     * @param AbstractDestination|string $destination
+     * @return GoToAction
      */
-    public function setDestination(Destination\AbstractDestination $destination)
+    public function setDestination(AbstractDestination $destination)
     {
         $this->_destination = $destination;
 
@@ -84,15 +96,5 @@ class GoToAction extends AbstractAction
         $this->_actionDictionary->D = $destination->getResource();
 
         return $this;
-    }
-
-    /**
-     * Get goto action destination
-     *
-     * @return \ZendPdf\Destination\AbstractDestination
-     */
-    public function getDestination()
-    {
-        return $this->_destination;
     }
 }

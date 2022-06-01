@@ -10,8 +10,8 @@
 
 namespace ZendPdf\Annotation;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
 
 /**
@@ -25,7 +25,7 @@ class Text extends AbstractAnnotation
     /**
      * Annotation object constructor
      *
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct(InternalType\AbstractTypeObject $annotationDictionary)
     {
@@ -33,8 +33,8 @@ class Text extends AbstractAnnotation
             throw new Exception\CorruptedPdfException('Annotation dictionary resource has to be a dictionary.');
         }
 
-        if ($annotationDictionary->Subtype === null  ||
-            $annotationDictionary->Subtype->getType() != InternalType\AbstractTypeObject::TYPE_NAME  ||
+        if ($annotationDictionary->Subtype === null ||
+            $annotationDictionary->Subtype->getType() != InternalType\AbstractTypeObject::TYPE_NAME ||
             $annotationDictionary->Subtype->value != 'Text') {
             throw new Exception\CorruptedPdfException('Subtype => Text entry is requires');
         }
@@ -50,13 +50,13 @@ class Text extends AbstractAnnotation
      * @param float $x2
      * @param float $y2
      * @param string $text
-     * @return \ZendPdf\Annotation\Text
+     * @return Text
      */
     public static function create($x1, $y1, $x2, $y2, $text)
     {
         $annotationDictionary = new InternalType\DictionaryObject();
 
-        $annotationDictionary->Type    = new InternalType\NameObject('Annot');
+        $annotationDictionary->Type = new InternalType\NameObject('Annot');
         $annotationDictionary->Subtype = new InternalType\NameObject('Text');
 
         $rectangle = new InternalType\ArrayObject();

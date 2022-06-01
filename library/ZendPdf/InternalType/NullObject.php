@@ -11,6 +11,7 @@
 namespace ZendPdf\InternalType;
 
 use ZendPdf as Pdf;
+use ZendPdf\ObjectFactory;
 
 /**
  * PDF file 'null' element implementation
@@ -52,10 +53,10 @@ class NullObject extends AbstractTypeObject
     /**
      * Return object as string
      *
-     * @param \ZendPdf\ObjectFactory $factory
+     * @param ObjectFactory $factory
      * @return string
      */
-    public function toString(Pdf\ObjectFactory $factory = null)
+    public function toString(ObjectFactory $factory = null)
     {
         return 'null';
     }

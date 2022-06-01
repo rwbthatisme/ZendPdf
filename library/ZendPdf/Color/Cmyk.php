@@ -11,6 +11,7 @@
 namespace ZendPdf\Color;
 
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\NumericObject;
 
 /**
  * CMYK color implementation
@@ -25,7 +26,7 @@ class Cmyk implements ColorInterface
      * Cyan level.
      * 0.0 (zero concentration) - 1.0 (maximum concentration)
      *
-     * @var \ZendPdf\InternalType\NumericObject
+     * @var NumericObject
      */
     private $_c;
 
@@ -33,7 +34,7 @@ class Cmyk implements ColorInterface
      * Magenta level.
      * 0.0 (zero concentration) - 1.0 (maximum concentration)
      *
-     * @var \ZendPdf\InternalType\NumericObject
+     * @var NumericObject
      */
     private $_m;
 
@@ -41,7 +42,7 @@ class Cmyk implements ColorInterface
      * Yellow level.
      * 0.0 (zero concentration) - 1.0 (maximum concentration)
      *
-     * @var \ZendPdf\InternalType\NumericObject
+     * @var NumericObject
      */
     private $_y;
 
@@ -49,7 +50,7 @@ class Cmyk implements ColorInterface
      * Key (BlacK) level.
      * 0.0 (zero concentration) - 1.0 (maximum concentration)
      *
-     * @var \ZendPdf\InternalType\NumericObject
+     * @var NumericObject
      */
     private $_k;
 
@@ -64,22 +65,38 @@ class Cmyk implements ColorInterface
      */
     public function __construct($c, $m, $y, $k)
     {
-        if ($c < 0) { $c = 0; }
-        if ($c > 1) { $c = 1; }
+        if ($c < 0) {
+            $c = 0;
+        }
+        if ($c > 1) {
+            $c = 1;
+        }
 
-        if ($m < 0) { $m = 0; }
-        if ($m > 1) { $m = 1; }
+        if ($m < 0) {
+            $m = 0;
+        }
+        if ($m > 1) {
+            $m = 1;
+        }
 
-        if ($y < 0) { $y = 0; }
-        if ($y > 1) { $y = 1; }
+        if ($y < 0) {
+            $y = 0;
+        }
+        if ($y > 1) {
+            $y = 1;
+        }
 
-        if ($k < 0) { $k = 0; }
-        if ($k > 1) { $k = 1; }
+        if ($k < 0) {
+            $k = 0;
+        }
+        if ($k > 1) {
+            $k = 1;
+        }
 
-        $this->_c = new InternalType\NumericObject($c);
-        $this->_m = new InternalType\NumericObject($m);
-        $this->_y = new InternalType\NumericObject($y);
-        $this->_k = new InternalType\NumericObject($k);
+        $this->_c = new NumericObject($c);
+        $this->_m = new NumericObject($m);
+        $this->_y = new NumericObject($y);
+        $this->_k = new NumericObject($k);
     }
 
     /**
@@ -93,9 +110,9 @@ class Cmyk implements ColorInterface
     public function instructions($stroking)
     {
         return $this->_c->toString() . ' '
-             . $this->_m->toString() . ' '
-             . $this->_y->toString() . ' '
-             . $this->_k->toString() .     ($stroking? " K\n" : " k\n");
+            . $this->_m->toString() . ' '
+            . $this->_y->toString() . ' '
+            . $this->_k->toString() . ($stroking ? " K\n" : " k\n");
     }
 
     /**

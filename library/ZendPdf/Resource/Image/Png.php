@@ -10,8 +10,8 @@
 
 namespace ZendPdf\Resource\Image;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
 use ZendPdf\ObjectFactory;
 
@@ -51,7 +51,7 @@ class Png extends AbstractImage
      * Object constructor
      *
      * @param string $imageFileName
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      * @todo Add compression conversions to support compression strategys other than PNG_COMPRESSION_DEFAULT_STRATEGY.
      * @todo Add pre-compression filtering.
      * @todo Add interlaced image handling.
@@ -61,7 +61,7 @@ class Png extends AbstractImage
      */
     public function __construct($imageFileName)
     {
-        if (($imageFile = @fopen($imageFileName, 'rb')) === false ) {
+        if (($imageFile = @fopen($imageFileName, 'rb')) === false) {
             throw new Exception\IOException("Can not open '$imageFileName' file for reading.");
         }
 
@@ -73,17 +73,17 @@ class Png extends AbstractImage
             throw new Exception\DomainException('Image is not a PNG');
         }
         fseek($imageFile, 12, SEEK_CUR); //Signature bytes (Includes the IHDR chunk) IHDR processed linerarly because it doesnt contain a variable chunk length
-        $wtmp = unpack('Ni',fread($imageFile, 4)); //Unpack a 4-Byte Long
+        $wtmp = unpack('Ni', fread($imageFile, 4)); //Unpack a 4-Byte Long
         $width = $wtmp['i'];
-        $htmp = unpack('Ni',fread($imageFile, 4));
+        $htmp = unpack('Ni', fread($imageFile, 4));
         $height = $htmp['i'];
         $bits = ord(fread($imageFile, 1)); //Higher than 8 bit depths are only supported in later versions of PDF.
         $color = ord(fread($imageFile, 1));
 
         $compression = ord(fread($imageFile, 1));
-        $prefilter = ord(fread($imageFile,1));
+        $prefilter = ord(fread($imageFile, 1));
 
-        if (($interlacing = ord(fread($imageFile,1))) != self::PNG_INTERLACING_DISABLED) {
+        if (($interlacing = ord(fread($imageFile, 1))) != self::PNG_INTERLACING_DISABLED) {
             throw new Exception\NotImplementedException('Only non-interlaced images are currently supported.');
         }
 
@@ -103,11 +103,11 @@ class Png extends AbstractImage
          * The following loop processes PNG chunks. 4 Byte Longs are packed first give the chunk length
          * followed by the chunk signature, a four byte code. IDAT and IEND are manditory in any PNG.
          */
-        while(($chunkLengthBytes = fread($imageFile, 4)) !== false) {
-            $chunkLengthtmp         = unpack('Ni', $chunkLengthBytes);
-            $chunkLength            = $chunkLengthtmp['i'];
-            $chunkType                      = fread($imageFile, 4);
-            switch($chunkType) {
+        while (($chunkLengthBytes = fread($imageFile, 4)) !== false) {
+            $chunkLengthtmp = unpack('Ni', $chunkLengthBytes);
+            $chunkLength = $chunkLengthtmp['i'];
+            $chunkType = fread($imageFile, 4);
+            switch ($chunkType) {
                 case 'IDAT': //Image Data
                     /*
                      * Reads the actual image data from the PNG file. Since we know at this point that the compression
@@ -130,26 +130,26 @@ class Png extends AbstractImage
                         case self::PNG_CHANNEL_GRAY:
                             $baseColor = ord(substr($trnsData, 1, 1));
                             $transparencyData = array(new InternalType\NumericObject($baseColor),
-                                                      new InternalType\NumericObject($baseColor));
+                                new InternalType\NumericObject($baseColor));
                             break;
 
                         case self::PNG_CHANNEL_RGB:
-                            $red = ord(substr($trnsData,1,1));
-                            $green = ord(substr($trnsData,3,1));
-                            $blue = ord(substr($trnsData,5,1));
+                            $red = ord(substr($trnsData, 1, 1));
+                            $green = ord(substr($trnsData, 3, 1));
+                            $blue = ord(substr($trnsData, 5, 1));
                             $transparencyData = array(new InternalType\NumericObject($red),
-                                                      new InternalType\NumericObject($red),
-                                                      new InternalType\NumericObject($green),
-                                                      new InternalType\NumericObject($green),
-                                                      new InternalType\NumericObject($blue),
-                                                      new InternalType\NumericObject($blue));
+                                new InternalType\NumericObject($red),
+                                new InternalType\NumericObject($green),
+                                new InternalType\NumericObject($green),
+                                new InternalType\NumericObject($blue),
+                                new InternalType\NumericObject($blue));
                             break;
 
                         case self::PNG_CHANNEL_INDEXED:
                             //Find the first transparent color in the index, we will mask that. (This is a bit of a hack. This should be a SMask and mask all entries values).
-                            if(($trnsIdx = strpos($trnsData, "\0")) !== false) {
+                            if (($trnsIdx = strpos($trnsData, "\0")) !== false) {
                                 $transparencyData = array(new InternalType\NumericObject($trnsIdx),
-                                                          new InternalType\NumericObject($trnsIdx));
+                                    new InternalType\NumericObject($trnsIdx));
                             }
                             break;
 
@@ -186,13 +186,13 @@ class Png extends AbstractImage
                 break;
 
             case self::PNG_CHANNEL_INDEXED:
-                if(empty($paletteData)) {
+                if (empty($paletteData)) {
                     throw new Exception\CorruptedImageException("PNG Corruption: No palette data read for indexed type PNG.");
                 }
                 $colorSpace = new InternalType\ArrayObject();
                 $colorSpace->items[] = new InternalType\NameObject('Indexed');
                 $colorSpace->items[] = new InternalType\NameObject('DeviceRGB');
-                $colorSpace->items[] = new InternalType\NumericObject((strlen($paletteData)/3-1));
+                $colorSpace->items[] = new InternalType\NumericObject((strlen($paletteData) / 3 - 1));
                 $paletteObject = $this->_objectFactory->newObject(new InternalType\BinaryStringObject($paletteData));
                 $colorSpace->items[] = $paletteObject;
                 break;
@@ -203,7 +203,7 @@ class Png extends AbstractImage
                  * the other will contain the Gray transparency overlay data. The former will become the object data and the latter
                  * will become the Shadow Mask (SMask).
                  */
-                if($bits > 8) {
+                if ($bits > 8) {
                     throw new Exception\NotImplementedException('Alpha PNGs with bit depth > 8 are not yet supported');
                 }
 
@@ -211,23 +211,23 @@ class Png extends AbstractImage
 
                 $decodingObjFactory = ObjectFactory::createFactory(1);
                 $decodingStream = $decodingObjFactory->newStreamObject($imageData);
-                $decodingStream->dictionary->Filter      = new InternalType\NameObject('FlateDecode');
+                $decodingStream->dictionary->Filter = new InternalType\NameObject('FlateDecode');
                 $decodingStream->dictionary->DecodeParms = new InternalType\DictionaryObject();
-                $decodingStream->dictionary->DecodeParms->Predictor        = new InternalType\NumericObject(15);
-                $decodingStream->dictionary->DecodeParms->Columns          = new InternalType\NumericObject($width);
-                $decodingStream->dictionary->DecodeParms->Colors           = new InternalType\NumericObject(2);   //GreyAlpha
+                $decodingStream->dictionary->DecodeParms->Predictor = new InternalType\NumericObject(15);
+                $decodingStream->dictionary->DecodeParms->Columns = new InternalType\NumericObject($width);
+                $decodingStream->dictionary->DecodeParms->Colors = new InternalType\NumericObject(2);   //GreyAlpha
                 $decodingStream->dictionary->DecodeParms->BitsPerComponent = new InternalType\NumericObject($bits);
                 $decodingStream->skipFilters();
 
                 $pngDataRawDecoded = $decodingStream->value;
 
                 //Iterate every pixel and copy out gray data and alpha channel (this will be slow)
-                for($pixel = 0, $pixelcount = ($width * $height); $pixel < $pixelcount; $pixel++) {
-                    $imageDataTmp .= $pngDataRawDecoded[($pixel*2)];
-                    $smaskData .= $pngDataRawDecoded[($pixel*2)+1];
+                for ($pixel = 0, $pixelcount = ($width * $height); $pixel < $pixelcount; $pixel++) {
+                    $imageDataTmp .= $pngDataRawDecoded[($pixel * 2)];
+                    $smaskData .= $pngDataRawDecoded[($pixel * 2) + 1];
                 }
                 $compressed = false;
-                $imageData  = $imageDataTmp; //Overwrite image data with the gray channel without alpha
+                $imageData = $imageDataTmp; //Overwrite image data with the gray channel without alpha
                 break;
 
             case self::PNG_CHANNEL_RGB_ALPHA:
@@ -236,7 +236,7 @@ class Png extends AbstractImage
                  * the other will contain the Gray transparency overlay data. The former will become the object data and the latter
                  * will become the Shadow Mask (SMask).
                  */
-                if($bits > 8) {
+                if ($bits > 8) {
                     throw new Exception\NotImplementedException('Alpha PNGs with bit depth > 8 are not yet supported');
                 }
 
@@ -244,75 +244,75 @@ class Png extends AbstractImage
 
                 $decodingObjFactory = ObjectFactory::createFactory(1);
                 $decodingStream = $decodingObjFactory->newStreamObject($imageData);
-                $decodingStream->dictionary->Filter      = new InternalType\NameObject('FlateDecode');
+                $decodingStream->dictionary->Filter = new InternalType\NameObject('FlateDecode');
                 $decodingStream->dictionary->DecodeParms = new InternalType\DictionaryObject();
-                $decodingStream->dictionary->DecodeParms->Predictor        = new InternalType\NumericObject(15);
-                $decodingStream->dictionary->DecodeParms->Columns          = new InternalType\NumericObject($width);
-                $decodingStream->dictionary->DecodeParms->Colors           = new InternalType\NumericObject(4);   //RGBA
+                $decodingStream->dictionary->DecodeParms->Predictor = new InternalType\NumericObject(15);
+                $decodingStream->dictionary->DecodeParms->Columns = new InternalType\NumericObject($width);
+                $decodingStream->dictionary->DecodeParms->Colors = new InternalType\NumericObject(4);   //RGBA
                 $decodingStream->dictionary->DecodeParms->BitsPerComponent = new InternalType\NumericObject($bits);
                 $decodingStream->skipFilters();
 
                 $pngDataRawDecoded = $decodingStream->value;
 
                 //Iterate every pixel and copy out rgb data and alpha channel (this will be slow)
-                for($pixel = 0, $pixelcount = ($width * $height); $pixel < $pixelcount; $pixel++) {
-                    $imageDataTmp .= $pngDataRawDecoded[($pixel*4)+0] . $pngDataRawDecoded[($pixel*4)+1] . $pngDataRawDecoded[($pixel*4)+2];
-                    $smaskData .= $pngDataRawDecoded[($pixel*4)+3];
+                for ($pixel = 0, $pixelcount = ($width * $height); $pixel < $pixelcount; $pixel++) {
+                    $imageDataTmp .= $pngDataRawDecoded[($pixel * 4) + 0] . $pngDataRawDecoded[($pixel * 4) + 1] . $pngDataRawDecoded[($pixel * 4) + 2];
+                    $smaskData .= $pngDataRawDecoded[($pixel * 4) + 3];
                 }
 
                 $compressed = false;
-                $imageData  = $imageDataTmp; //Overwrite image data with the RGB channel without alpha
+                $imageData = $imageDataTmp; //Overwrite image data with the RGB channel without alpha
                 break;
 
             default:
                 throw new Exception\CorruptedImageException('PNG Corruption: Invalid color space.');
         }
 
-        if(empty($imageData)) {
+        if (empty($imageData)) {
             throw new Exception\CorruptedImageException('Corrupt PNG Image. Mandatory IDAT chunk not found.');
         }
 
         $imageDictionary = $this->_resource->dictionary;
-        if(!empty($smaskData)) {
+        if (!empty($smaskData)) {
             /*
              * Includes the Alpha transparency data as a Gray Image, then assigns the image as the Shadow Mask for the main image data.
              */
             $smaskStream = $this->_objectFactory->newStreamObject($smaskData);
-            $smaskStream->dictionary->Type             = new InternalType\NameObject('XObject');
-            $smaskStream->dictionary->Subtype          = new InternalType\NameObject('Image');
-            $smaskStream->dictionary->Width            = new InternalType\NumericObject($width);
-            $smaskStream->dictionary->Height           = new InternalType\NumericObject($height);
-            $smaskStream->dictionary->ColorSpace       = new InternalType\NameObject('DeviceGray');
+            $smaskStream->dictionary->Type = new InternalType\NameObject('XObject');
+            $smaskStream->dictionary->Subtype = new InternalType\NameObject('Image');
+            $smaskStream->dictionary->Width = new InternalType\NumericObject($width);
+            $smaskStream->dictionary->Height = new InternalType\NumericObject($height);
+            $smaskStream->dictionary->ColorSpace = new InternalType\NameObject('DeviceGray');
             $smaskStream->dictionary->BitsPerComponent = new InternalType\NumericObject($bits);
             $imageDictionary->SMask = $smaskStream;
 
             // Encode stream with FlateDecode filter
             $smaskStreamDecodeParms = array();
-            $smaskStreamDecodeParms['Predictor']        = new InternalType\NumericObject(15);
-            $smaskStreamDecodeParms['Columns']          = new InternalType\NumericObject($width);
-            $smaskStreamDecodeParms['Colors']           = new InternalType\NumericObject(1);
+            $smaskStreamDecodeParms['Predictor'] = new InternalType\NumericObject(15);
+            $smaskStreamDecodeParms['Columns'] = new InternalType\NumericObject($width);
+            $smaskStreamDecodeParms['Colors'] = new InternalType\NumericObject(1);
             $smaskStreamDecodeParms['BitsPerComponent'] = new InternalType\NumericObject(8);
-            $smaskStream->dictionary->DecodeParms  = new InternalType\DictionaryObject($smaskStreamDecodeParms);
-            $smaskStream->dictionary->Filter       = new InternalType\NameObject('FlateDecode');
+            $smaskStream->dictionary->DecodeParms = new InternalType\DictionaryObject($smaskStreamDecodeParms);
+            $smaskStream->dictionary->Filter = new InternalType\NameObject('FlateDecode');
         }
 
-        if(!empty($transparencyData)) {
+        if (!empty($transparencyData)) {
             //This is experimental and not properly tested.
             $imageDictionary->Mask = new InternalType\ArrayObject($transparencyData);
         }
 
-        $imageDictionary->Width            = new InternalType\NumericObject($width);
-        $imageDictionary->Height           = new InternalType\NumericObject($height);
-        $imageDictionary->ColorSpace       = $colorSpace;
+        $imageDictionary->Width = new InternalType\NumericObject($width);
+        $imageDictionary->Height = new InternalType\NumericObject($height);
+        $imageDictionary->ColorSpace = $colorSpace;
         $imageDictionary->BitsPerComponent = new InternalType\NumericObject($bits);
-        $imageDictionary->Filter           = new InternalType\NameObject('FlateDecode');
+        $imageDictionary->Filter = new InternalType\NameObject('FlateDecode');
 
         $decodeParms = array();
-        $decodeParms['Predictor']        = new InternalType\NumericObject(15); // Optimal prediction
-        $decodeParms['Columns']          = new InternalType\NumericObject($width);
-        $decodeParms['Colors']           = new InternalType\NumericObject((($color==self::PNG_CHANNEL_RGB || $color==self::PNG_CHANNEL_RGB_ALPHA)?(3):(1)));
+        $decodeParms['Predictor'] = new InternalType\NumericObject(15); // Optimal prediction
+        $decodeParms['Columns'] = new InternalType\NumericObject($width);
+        $decodeParms['Colors'] = new InternalType\NumericObject((($color == self::PNG_CHANNEL_RGB || $color == self::PNG_CHANNEL_RGB_ALPHA) ? (3) : (1)));
         $decodeParms['BitsPerComponent'] = new InternalType\NumericObject($bits);
-        $imageDictionary->DecodeParms    = new InternalType\DictionaryObject($decodeParms);
+        $imageDictionary->DecodeParms = new InternalType\DictionaryObject($decodeParms);
 
         //Include only the image IDAT section data.
         $this->_resource->value = $imageData;

@@ -10,8 +10,9 @@
 
 namespace ZendPdf\BinaryParser;
 
-use ZendPdf as Pdf;
+use ZendPdf\BinaryParser\DataSource\AbstractDataSource;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * Abstract utility class for parsing binary files.
@@ -40,8 +41,7 @@ abstract class AbstractBinaryParser
     /**
      * Big-endian byte order (0x01 0x02 0x03 0x04).
      */
-    const BYTE_ORDER_BIG_ENDIAN    = 1;
-
+    const BYTE_ORDER_BIG_ENDIAN = 1;
 
 
     /**** Instance Variables ****/
@@ -61,10 +61,9 @@ abstract class AbstractBinaryParser
 
     /**
      * Object representing the data source to be parsed.
-     * @var \ZendPdf\BinaryParser\DataSource\AbstractDataSource
+     * @var AbstractDataSource
      */
     protected $_dataSource = null;
-
 
 
     /**** Public Interface ****/
@@ -73,34 +72,12 @@ abstract class AbstractBinaryParser
     /* Abstract Methods */
 
     /**
-     * Performs a cursory check to verify that the binary file is in the expected
-     * format. Intended to quickly weed out obviously bogus files.
-     *
-     * Must set $this->_isScreened to true if successful.
-     *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    abstract public function screen();
-
-    /**
-     * Reads and parses the complete binary file.
-     *
-     * Must set $this->_isParsed to true if successful.
-     *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    abstract public function parse();
-
-
-    /* Object Lifecycle */
-
-    /**
      * Object constructor.
      *
      * Verifies that the data source has been properly initialized.
      *
-     * @param \ZendPdf\BinaryParser\DataSource\AbstractDataSource $dataSource
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @param AbstractDataSource $dataSource
+     * @throws ExceptionInterface
      */
     public function __construct(DataSource\AbstractDataSource $dataSource)
     {
@@ -109,6 +86,28 @@ abstract class AbstractBinaryParser
         }
         $this->_dataSource = $dataSource;
     }
+
+    /**
+     * Performs a cursory check to verify that the binary file is in the expected
+     * format. Intended to quickly weed out obviously bogus files.
+     *
+     * Must set $this->_isScreened to true if successful.
+     *
+     * @throws ExceptionInterface
+     */
+    abstract public function screen();
+
+
+    /* Object Lifecycle */
+
+    /**
+     * Reads and parses the complete binary file.
+     *
+     * Must set $this->_isParsed to true if successful.
+     *
+     * @throws ExceptionInterface
+     */
+    abstract public function parse();
 
     /**
      * Object destructor.
@@ -146,7 +145,7 @@ abstract class AbstractBinaryParser
     /**
      * Returns the data source object representing the file being parsed.
      *
-     * @return \ZendPdf\BinaryParser\DataSource\AbstractDataSource
+     * @return AbstractDataSource
      */
     public function getDataSource()
     {
@@ -160,7 +159,7 @@ abstract class AbstractBinaryParser
      * Convenience wrapper for the data source object's moveToOffset() method.
      *
      * @param integer $offset Destination byte offset.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function moveToOffset($offset)
     {
@@ -169,12 +168,12 @@ abstract class AbstractBinaryParser
 
     public function getOffset()
     {
-       return $this->_dataSource->getOffset();
+        return $this->_dataSource->getOffset();
     }
 
     public function getSize()
     {
-       return $this->_dataSource->getSize();
+        return $this->_dataSource->getSize();
     }
 
     /**
@@ -182,7 +181,7 @@ abstract class AbstractBinaryParser
      *
      * @param integer $byteCount Number of bytes to read.
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function readBytes($byteCount)
     {
@@ -193,7 +192,7 @@ abstract class AbstractBinaryParser
      * Convenience wrapper for the data source object's skipBytes() method.
      *
      * @param integer $byteCount Number of bytes to skip.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function skipBytes($byteCount)
     {
@@ -202,116 +201,6 @@ abstract class AbstractBinaryParser
 
 
     /* Parser Methods */
-
-    /**
-     * Reads the signed integer value from the binary file at the current byte
-     * offset.
-     *
-     * Advances the offset by the number of bytes read. Throws an exception if
-     * an error occurs.
-     *
-     * @param integer $size Size of integer in bytes: 1-4
-     * @param integer $byteOrder (optional) Big- or little-endian byte order.
-     *   Use the BYTE_ORDER_ constants defined in {@link \ZendPdf\BinaryParser\AbstractBinaryParser}.
-     *   If omitted, uses big-endian.
-     * @return integer
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    public function readInt($size, $byteOrder = self::BYTE_ORDER_BIG_ENDIAN)
-    {
-        if (($size < 1) || ($size > 4)) {
-            throw new Exception\BinaryParserException("Invalid signed integer size: $size");
-        }
-        $bytes = $this->_dataSource->readBytes($size);
-        /* unpack() will not work for this method because it always works in
-         * the host byte order for signed integers. It also does not allow for
-         * variable integer sizes.
-         */
-        if ($byteOrder == self::BYTE_ORDER_BIG_ENDIAN) {
-            $number = ord($bytes[0]);
-            if (($number & 0x80) == 0x80) {
-                /* This number is negative. Extract the positive equivalent.
-                 */
-                $number = (~ $number) & 0xff;
-                for ($i = 1; $i < $size; $i++) {
-                    $number = ($number << 8) | ((~ ord($bytes[$i])) & 0xff);
-                }
-                /* Now turn this back into a negative number by taking the
-                 * two's complement (we didn't add one above so won't
-                 * subtract it below). This works reliably on both 32- and
-                 * 64-bit systems.
-                 */
-                $number = ~$number;
-            } else {
-                for ($i = 1; $i < $size; $i++) {
-                    $number = ($number << 8) | ord($bytes[$i]);
-                }
-            }
-        } elseif ($byteOrder == self::BYTE_ORDER_LITTLE_ENDIAN) {
-            $number = ord($bytes[$size - 1]);
-            if (($number & 0x80) == 0x80) {
-                /* Negative number. See discussion above.
-                 */
-                $number = 0;
-                for ($i = --$size; $i >= 0; $i--) {
-                    $number |= ((~ ord($bytes[$i])) & 0xff) << ($i * 8);
-                }
-                $number = ~$number;
-            } else {
-                $number = 0;
-                for ($i = --$size; $i >= 0; $i--) {
-                    $number |= ord($bytes[$i]) << ($i * 8);
-                }
-            }
-        } else {
-            throw new Exception\BinaryParserException("Invalid byte order: $byteOrder");
-        }
-        return $number;
-    }
-
-    /**
-     * Reads the unsigned integer value from the binary file at the current byte
-     * offset.
-     *
-     * Advances the offset by the number of bytes read. Throws an exception if
-     * an error occurs.
-     *
-     * NOTE: If you ask for a 4-byte unsigned integer on a 32-bit machine, the
-     * resulting value WILL BE SIGNED because PHP uses signed integers internally
-     * for everything. To guarantee portability, be sure to use bitwise operators
-     * operators on large unsigned integers!
-     *
-     * @param integer $size Size of integer in bytes: 1-4
-     * @param integer $byteOrder (optional) Big- or little-endian byte order.
-     *   Use the BYTE_ORDER_ constants defined in {@link \ZendPdf\BinaryParser\AbstractBinaryParser}.
-     *   If omitted, uses big-endian.
-     * @return integer
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    public function readUInt($size, $byteOrder = self::BYTE_ORDER_BIG_ENDIAN)
-    {
-        if (($size < 1) || ($size > 4)) {
-            throw new Exception\BinaryParserException("Invalid unsigned integer size: $size");
-        }
-        $bytes = $this->_dataSource->readBytes($size);
-        /* unpack() is a bit heavyweight for this simple conversion. Just
-         * work the bytes directly.
-         */
-        if ($byteOrder == self::BYTE_ORDER_BIG_ENDIAN) {
-            $number = ord($bytes[0]);
-            for ($i = 1; $i < $size; $i++) {
-                $number = ($number << 8) | ord($bytes[$i]);
-            }
-        } elseif ($byteOrder == self::BYTE_ORDER_LITTLE_ENDIAN) {
-            $number = 0;
-            for ($i = --$size; $i >= 0; $i--) {
-                $number |= ord($bytes[$i]) << ($i * 8);
-            }
-        } else {
-            throw new Exception\BinaryParserException("Invalid byte order: $byteOrder");
-        }
-        return $number;
-    }
 
     /**
      * Returns true if the specified bit is set in the integer bitfield.
@@ -342,7 +231,7 @@ abstract class AbstractBinaryParser
      *   Use the BYTE_ORDER_ constants defined in {@link \ZendPdf\BinaryParser\AbstractBinaryParser}.
      *   If omitted, uses big-endian.
      * @return float
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function readFixed($mantissaBits, $fractionBits,
                               $byteOrder = self::BYTE_ORDER_BIG_ENDIAN)
@@ -356,6 +245,72 @@ abstract class AbstractBinaryParser
     }
 
     /**
+     * Reads the signed integer value from the binary file at the current byte
+     * offset.
+     *
+     * Advances the offset by the number of bytes read. Throws an exception if
+     * an error occurs.
+     *
+     * @param integer $size Size of integer in bytes: 1-4
+     * @param integer $byteOrder (optional) Big- or little-endian byte order.
+     *   Use the BYTE_ORDER_ constants defined in {@link \ZendPdf\BinaryParser\AbstractBinaryParser}.
+     *   If omitted, uses big-endian.
+     * @return integer
+     * @throws ExceptionInterface
+     */
+    public function readInt($size, $byteOrder = self::BYTE_ORDER_BIG_ENDIAN)
+    {
+        if (($size < 1) || ($size > 4)) {
+            throw new Exception\BinaryParserException("Invalid signed integer size: $size");
+        }
+        $bytes = $this->_dataSource->readBytes($size);
+        /* unpack() will not work for this method because it always works in
+         * the host byte order for signed integers. It also does not allow for
+         * variable integer sizes.
+         */
+        if ($byteOrder == self::BYTE_ORDER_BIG_ENDIAN) {
+            $number = ord($bytes[0]);
+            if (($number & 0x80) == 0x80) {
+                /* This number is negative. Extract the positive equivalent.
+                 */
+                $number = (~$number) & 0xff;
+                for ($i = 1; $i < $size; $i++) {
+                    $number = ($number << 8) | ((~ord($bytes[$i])) & 0xff);
+                }
+                /* Now turn this back into a negative number by taking the
+                 * two's complement (we didn't add one above so won't
+                 * subtract it below). This works reliably on both 32- and
+                 * 64-bit systems.
+                 */
+                $number = ~$number;
+            } else {
+                for ($i = 1; $i < $size; $i++) {
+                    $number = ($number << 8) | ord($bytes[$i]);
+                }
+            }
+        } elseif ($byteOrder == self::BYTE_ORDER_LITTLE_ENDIAN) {
+            $number = ord($bytes[$size - 1]);
+            if (($number & 0x80) == 0x80) {
+                /* Negative number. See discussion above.
+                 */
+                $number = 0;
+                for ($i = --$size; $i >= 0; $i--) {
+                    $number |= ((~ord($bytes[$i])) & 0xff) << ($i * 8);
+                }
+                $number = ~$number;
+            } else {
+                $number = 0;
+                for ($i = --$size; $i >= 0; $i--) {
+                    $number |= ord($bytes[$i]) << ($i * 8);
+                }
+            }
+        } else {
+            throw new Exception\BinaryParserException("Invalid byte order: $byteOrder");
+        }
+        return $number;
+    }
+
+    /**
      * Reads the Unicode UTF-16-encoded string from the binary file at the
      * current byte offset.
      *
@@ -365,11 +320,6 @@ abstract class AbstractBinaryParser
      * Advances the offset by the number of bytes read. Throws an exception if
      * an error occurs.
      *
-     * @todo Consider changing $byteCount to a character count. They are not
-     *   always equivalent (in the case of surrogates).
-     * @todo Make $byteOrder optional if there is a byte-order mark (BOM) in the
-     *   string being extracted.
-     *
      * @param integer $byteCount Number of bytes (characters * 2) to return.
      * @param integer $byteOrder (optional) Big- or little-endian byte order.
      *   Use the BYTE_ORDER_ constants defined in {@link \ZendPdf\BinaryParser\AbstractBinaryParser}.
@@ -378,7 +328,12 @@ abstract class AbstractBinaryParser
      *   You may use any character set supported by {@link iconv()}. If omitted,
      *   uses 'current locale'.
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
+     * @todo Make $byteOrder optional if there is a byte-order mark (BOM) in the
+     *   string being extracted.
+     *
+     * @todo Consider changing $byteCount to a character count. They are not
+     *   always equivalent (in the case of surrogates).
      */
     public function readStringUTF16($byteCount,
                                     $byteOrder = self::BYTE_ORDER_BIG_ENDIAN,
@@ -417,7 +372,7 @@ abstract class AbstractBinaryParser
      *   You may use any character set supported by {@link iconv()}. If omitted,
      *   uses 'current locale'.
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function readStringMacRoman($byteCount, $characterSet = '')
     {
@@ -447,7 +402,7 @@ abstract class AbstractBinaryParser
      * @param integer $lengthBytes (optional) Number of bytes that make up the
      *   length. Default is 1.
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function readStringPascal($characterSet = '', $lengthBytes = 1)
     {
@@ -460,5 +415,49 @@ abstract class AbstractBinaryParser
             return $bytes;
         }
         return iconv('ASCII', $characterSet, $bytes);
+    }
+
+    /**
+     * Reads the unsigned integer value from the binary file at the current byte
+     * offset.
+     *
+     * Advances the offset by the number of bytes read. Throws an exception if
+     * an error occurs.
+     *
+     * NOTE: If you ask for a 4-byte unsigned integer on a 32-bit machine, the
+     * resulting value WILL BE SIGNED because PHP uses signed integers internally
+     * for everything. To guarantee portability, be sure to use bitwise operators
+     * operators on large unsigned integers!
+     *
+     * @param integer $size Size of integer in bytes: 1-4
+     * @param integer $byteOrder (optional) Big- or little-endian byte order.
+     *   Use the BYTE_ORDER_ constants defined in {@link \ZendPdf\BinaryParser\AbstractBinaryParser}.
+     *   If omitted, uses big-endian.
+     * @return integer
+     * @throws ExceptionInterface
+     */
+    public function readUInt($size, $byteOrder = self::BYTE_ORDER_BIG_ENDIAN)
+    {
+        if (($size < 1) || ($size > 4)) {
+            throw new Exception\BinaryParserException("Invalid unsigned integer size: $size");
+        }
+        $bytes = $this->_dataSource->readBytes($size);
+        /* unpack() is a bit heavyweight for this simple conversion. Just
+         * work the bytes directly.
+         */
+        if ($byteOrder == self::BYTE_ORDER_BIG_ENDIAN) {
+            $number = ord($bytes[0]);
+            for ($i = 1; $i < $size; $i++) {
+                $number = ($number << 8) | ord($bytes[$i]);
+            }
+        } elseif ($byteOrder == self::BYTE_ORDER_LITTLE_ENDIAN) {
+            $number = 0;
+            for ($i = --$size; $i >= 0; $i--) {
+                $number |= ord($bytes[$i]) << ($i * 8);
+            }
+        } else {
+            throw new Exception\BinaryParserException("Invalid byte order: $byteOrder");
+        }
+        return $number;
     }
 }

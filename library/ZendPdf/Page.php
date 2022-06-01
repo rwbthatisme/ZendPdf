@@ -10,8 +10,15 @@
 
 namespace ZendPdf;
 
+use ZendPdf\Annotation\AbstractAnnotation;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\DictionaryObject;
+use ZendPdf\InternalType\LayoutBox;
+use ZendPdf\Resource\AbstractResource;
+use ZendPdf\Resource\Font\AbstractFont;
+use ZendPdf\Resource\Font\Extracted;
 
 /**
  * PDF Page
@@ -28,22 +35,22 @@ class Page
     /**
      * Size representing an A4 page in portrait (tall) orientation.
      */
-    const SIZE_A4                = '595:842:';
+    const SIZE_A4 = '595:842:';
 
     /**
      * Size representing an A4 page in landscape (wide) orientation.
      */
-    const SIZE_A4_LANDSCAPE      = '842:595:';
+    const SIZE_A4_LANDSCAPE = '842:595:';
 
     /**
      * Size representing a US Letter page in portrait (tall) orientation.
      */
-    const SIZE_LETTER            = '612:792:';
+    const SIZE_LETTER = '612:792:';
 
     /**
      * Size representing a US Letter page in landscape (wide) orientation.
      */
-    const SIZE_LETTER_LANDSCAPE  = '792:612:';
+    const SIZE_LETTER_LANDSCAPE = '792:612:';
 
 
     /* Shape Drawing */
@@ -51,12 +58,12 @@ class Page
     /**
      * Stroke the path only. Do not fill.
      */
-    const SHAPE_DRAW_STROKE      = 0;
+    const SHAPE_DRAW_STROKE = 0;
 
     /**
      * Fill the path only. Do not stroke.
      */
-    const SHAPE_DRAW_FILL        = 1;
+    const SHAPE_DRAW_FILL = 1;
 
     /**
      * Fill and stroke the path.
@@ -74,7 +81,7 @@ class Page
     /**
      * Fill the path using the even-odd rule.
      */
-    const FILL_METHOD_EVEN_ODD        = 1;
+    const FILL_METHOD_EVEN_ODD = 1;
 
 
     /* Line Dash Types */
@@ -83,33 +90,27 @@ class Page
      * Solid line dash.
      */
     const LINE_DASHING_SOLID = 0;
-
-
-
-    /**
-     * Page dictionary (refers to an inderect \ZendPdf\InternalType\DictionaryObject object).
-     *
-     * @var  \ZendPdf\InternalType\DictionaryObject
-     *     | \ZendPdf\InternalType\IndirectObject
-     *     | \ZendPdf\InternalType\IndirectObjectReference
-     */
-    protected $_pageDictionary;
-
-    /**
-     * PDF objects factory.
-     *
-     * @var \ZendPdf\ObjectFactory
-     */
-    protected $_objFactory = null;
-
     /**
      * Flag which signals, that page is created separately from any PDF document or
      * attached to anyone.
      *
      * @var boolean
      */
-    protected $_attached;
-
+    public $_attached;
+    /**
+     * Page dictionary (refers to an inderect \ZendPdf\InternalType\DictionaryObject object).
+     *
+     * @var  DictionaryObject
+     *     | \ZendPdf\InternalType\IndirectObject
+     *     | \ZendPdf\InternalType\IndirectObjectReference
+     */
+    protected $_pageDictionary;
+    /**
+     * PDF objects factory.
+     *
+     * @var ObjectFactory
+     */
+    protected $_objFactory = null;
     /**
      * Stream of the drawing instructions.
      *
@@ -120,7 +121,7 @@ class Page
     /**
      * Current style
      *
-     * @var \ZendPdf\Style
+     * @var Style
      */
     protected $_style = null;
 
@@ -145,7 +146,7 @@ class Page
     /**
      * Current font
      *
-     * @var \ZendPdf\Resource\Font\AbstractFont
+     * @var AbstractFont
      */
     protected $_font = null;
 
@@ -194,23 +195,23 @@ class Page
      * @param mixed $param1
      * @param mixed $param2
      * @param mixed $param3
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct($param1, $param2 = null, $param3 = null)
     {
         if (($param1 instanceof InternalType\IndirectObjectReference ||
-             $param1 instanceof InternalType\IndirectObject
+                $param1 instanceof InternalType\IndirectObject
             ) &&
             $param1->getType() == InternalType\AbstractTypeObject::TYPE_DICTIONARY &&
             $param2 instanceof ObjectFactory &&
             $param3 === null
-           ) {
+        ) {
             switch ($param1->getType()) {
                 case InternalType\AbstractTypeObject::TYPE_DICTIONARY:
                     $this->_pageDictionary = $param1;
-                    $this->_objFactory     = $param2;
-                    $this->_attached       = true;
-                    $this->_safeGS         = false;
+                    $this->_objFactory = $param2;
+                    $this->_attached = true;
+                    $this->_safeGS = false;
                     return;
                     break;
 
@@ -229,10 +230,10 @@ class Page
             // Let already existing content and resources to be shared between pages
             // We don't give existing content modification functionality, so we don't need "deep copy"
             $this->_objFactory = $param1->_objFactory;
-            $this->_attached   = &$param1->_attached;
-            $this->_safeGS     = false;
+            $this->_attached = &$param1->_attached;
+            $this->_safeGS = false;
 
-            $this->_pageDictionary = $this->_objFactory->newObject(new InternalType\DictionaryObject());
+            $this->_pageDictionary = $this->_objFactory->newObject(new DictionaryObject());
 
             foreach ($param1->_pageDictionary->getKeys() as $key) {
                 if ($key == 'Contents') {
@@ -256,15 +257,16 @@ class Page
 
             return;
         } elseif (is_string($param1) &&
-                   ($param2 === null || $param2 instanceof ObjectFactory) &&
-                   $param3 === null) {
+            ($param2 === null || $param2 instanceof ObjectFactory) &&
+            $param3 === null) {
             if ($param2 !== null) {
                 $this->_objFactory = $param2;
             } else {
                 $this->_objFactory = ObjectFactory::createFactory(1);
             }
-            $this->_attached   = false;
-            $this->_safeGS     = true; /** New page created. That's users App responsibility to track GS changes */
+            $this->_attached = false;
+            $this->_safeGS = true;
+            /** New page created. That's users App responsibility to track GS changes */
 
             switch (strtolower($param1)) {
                 case 'a4':
@@ -284,8 +286,8 @@ class Page
             }
 
             $pageDim = explode(':', $param1);
-            if(count($pageDim) == 2  ||  count($pageDim) == 3) {
-                $pageWidth  = $pageDim[0];
+            if (count($pageDim) == 2 || count($pageDim) == 3) {
+                $pageWidth = $pageDim[0];
                 $pageHeight = $pageDim[1];
             } else {
                 /**
@@ -299,7 +301,7 @@ class Page
              */
 
         } elseif (is_numeric($param1) && is_numeric($param2) &&
-                   ($param3 === null || $param3 instanceof ObjectFactory)) {
+            ($param3 === null || $param3 instanceof ObjectFactory)) {
             if ($param3 !== null) {
                 $this->_objFactory = $param3;
             } else {
@@ -307,61 +309,171 @@ class Page
             }
 
             $this->_attached = false;
-            $this->_safeGS   = true; /** New page created. That's users App responsibility to track GS changes */
-            $pageWidth  = $param1;
+            $this->_safeGS = true;
+            /** New page created. That's users App responsibility to track GS changes */
+            $pageWidth = $param1;
             $pageHeight = $param2;
 
         } else {
             throw new Exception\BadMethodCallException('Unrecognized method signature, wrong number of arguments or wrong argument types.');
         }
 
-        $this->_pageDictionary = $this->_objFactory->newObject(new InternalType\DictionaryObject());
-        $this->_pageDictionary->Type         = new InternalType\NameObject('Page');
+        $this->_pageDictionary = $this->_objFactory->newObject(new DictionaryObject());
+        $this->_pageDictionary->Type = new InternalType\NameObject('Page');
         $this->_pageDictionary->LastModified = new InternalType\StringObject(PdfDocument::pdfDate());
-        $this->_pageDictionary->Resources    = new InternalType\DictionaryObject();
-        $this->_pageDictionary->MediaBox     = new InternalType\ArrayObject();
+        $this->_pageDictionary->Resources = new DictionaryObject();
+        $this->_pageDictionary->MediaBox = new InternalType\ArrayObject();
         $this->_pageDictionary->MediaBox->items[] = new InternalType\NumericObject(0);
         $this->_pageDictionary->MediaBox->items[] = new InternalType\NumericObject(0);
         $this->_pageDictionary->MediaBox->items[] = new InternalType\NumericObject($pageWidth);
         $this->_pageDictionary->MediaBox->items[] = new InternalType\NumericObject($pageHeight);
-        $this->_pageDictionary->Contents     = new InternalType\ArrayObject();
+        $this->_pageDictionary->Contents = new InternalType\ArrayObject();
     }
 
+    /**
+     * Clone page, extract it and dependent objects from the current document,
+     * so it can be used within other docs.
+     */
+    public function __clone()
+    {
+        $factory = ObjectFactory::createFactory(1);
+        $processed = [];
+
+        // Clone dictionary object.
+        // Do it explicitly to prevent sharing page attributes between different
+        // results of clonePage() operation (other resources are still shared)
+        $dictionary = new DictionaryObject();
+        foreach ($this->_pageDictionary->getKeys() as $key) {
+            $dictionary->$key = $this->_pageDictionary->$key->makeClone($factory,
+                $processed,
+                InternalType\AbstractTypeObject::CLONE_MODE_SKIP_PAGES);
+        }
+
+        $this->_pageDictionary = $factory->newObject($dictionary);
+        $this->_objFactory = $factory;
+        $this->_attached = false;
+        $this->_style = null;
+        $this->_font = null;
+    }
 
     /**
-     * Attach resource to the page
+     * Clone page, extract it and dependent objects from the current document,
+     * so it can be used within other docs.
      *
-     * @param string $type
-     * @param \ZendPdf\Resource\AbstractResource $resource
-     * @return string
+     * @param ObjectFactory $factory
+     * @param array $processed
+     * @return Page
+     * @internal
      */
-    protected function _attachResource($type, Resource\AbstractResource $resource)
+    public function clonePage(ObjectFactory $factory, &$processed)
     {
-        // Check that Resources dictionary contains appropriate resource set
-        if ($this->_pageDictionary->Resources->$type === null) {
-            $this->_pageDictionary->Resources->touch();
-            $this->_pageDictionary->Resources->$type = new InternalType\DictionaryObject();
+        // Clone dictionary object.
+        // Do it explicitly to prevent sharing page attributes between different
+        // results of clonePage() operation (other resources are still shared)
+        $dictionary = new DictionaryObject();
+        foreach ($this->_pageDictionary->getKeys() as $key) {
+            $dictionary->$key = $this->_pageDictionary->$key->makeClone($factory,
+                $processed,
+                InternalType\AbstractTypeObject::CLONE_MODE_SKIP_PAGES);
+        }
+
+        $clonedPage = new Page($factory->newObject($dictionary), $factory);
+        $clonedPage->_attached = false;
+
+        return $clonedPage;
+    }
+
+    /**
+     * Retrive PDF file reference to the page
+     *
+     * @return DictionaryObject
+     * @internal
+     */
+    public function getPageDictionary()
+    {
+        return $this->_pageDictionary;
+    }
+
+    /**
+     * Prepare page to be rendered into PDF.
+     *
+     * @todo Don't forget to close all current graphics operations (like path drawing)
+     *
+     * @param ObjectFactory $objFactory
+     * @throws ExceptionInterface
+     */
+    public function render(ObjectFactory $objFactory)
+    {
+        $this->flush();
+
+        if ($objFactory === $this->_objFactory) {
+            // Page is already attached to the document.
+            return;
+        }
+
+        if ($this->_attached) {
+            throw new Exception\LogicException('Page is attached to other document. Use clone $page to get it context free.');
         } else {
-            $this->_pageDictionary->Resources->$type->touch();
+            $objFactory->attach($this->_objFactory);
+        }
+    }
+
+    /**
+     * Dump current drawing instructions into the content stream.
+     *
+     * @todo Don't forget to close all current graphics operations (like path drawing)
+     *
+     * @throws ExceptionInterface
+     */
+    public function flush()
+    {
+        if ($this->_saveCount != 0) {
+            throw new Exception\LogicException('Saved graphics state is not restored');
         }
 
-        // Check, that resource is already attached to resource set.
-        $resObject = $resource->getResource();
-        foreach ($this->_pageDictionary->Resources->$type->getKeys() as $ResID) {
-            if ($this->_pageDictionary->Resources->$type->$ResID === $resObject) {
-                return $ResID;
+        if ($this->_contents == '') {
+            return;
+        }
+
+        if ($this->_pageDictionary->Contents->getType() != InternalType\AbstractTypeObject::TYPE_ARRAY) {
+            /**
+             * It's a stream object.
+             * Prepare Contents page attribute for update.
+             */
+            $this->_pageDictionary->touch();
+
+            $currentPageContents = $this->_pageDictionary->Contents;
+            $this->_pageDictionary->Contents = new InternalType\ArrayObject();
+            $this->_pageDictionary->Contents->items[] = $currentPageContents;
+        } else {
+            $this->_pageDictionary->Contents->touch();
+        }
+
+        if ((!$this->_safeGS) && (count($this->_pageDictionary->Contents->items) != 0)) {
+            /**
+             * Page already has some content which is not treated as safe.
+             *
+             * Add save/restore GS operators
+             */
+            $this->_addProcSet('PDF');
+
+            $newContentsArray = new InternalType\ArrayObject();
+            $newContentsArray->items[] = $this->_objFactory->newStreamObject(" q\n");
+            foreach ($this->_pageDictionary->Contents->items as $contentStream) {
+                $newContentsArray->items[] = $contentStream;
             }
+            $newContentsArray->items[] = $this->_objFactory->newStreamObject(" Q\n");
+
+            $this->_pageDictionary->touch();
+            $this->_pageDictionary->Contents = $newContentsArray;
+
+            $this->_safeGS = true;
         }
 
-        $idCounter = 1;
-        do {
-            $newResName = $type[0] . $idCounter++;
-        } while ($this->_pageDictionary->Resources->$type->$newResName !== null);
+        $this->_pageDictionary->Contents->items[] =
+            $this->_objFactory->newStreamObject($this->_contents);
 
-        $this->_pageDictionary->Resources->$type->$newResName = $resObject;
-        $this->_objFactory->attach($resource->getFactory());
-
-        return $newResName;
+        $this->_contents = '';
     }
 
     /**
@@ -390,158 +502,10 @@ class Page
     }
 
     /**
-     * Clone page, extract it and dependent objects from the current document,
-     * so it can be used within other docs.
-     */
-    public function __clone()
-    {
-        $factory = ObjectFactory::createFactory(1);
-        $processed = array();
-
-        // Clone dictionary object.
-        // Do it explicitly to prevent sharing page attributes between different
-        // results of clonePage() operation (other resources are still shared)
-        $dictionary = new InternalType\DictionaryObject();
-        foreach ($this->_pageDictionary->getKeys() as $key) {
-            $dictionary->$key = $this->_pageDictionary->$key->makeClone($factory,
-                                                                        $processed,
-                                                                        InternalType\AbstractTypeObject::CLONE_MODE_SKIP_PAGES);
-        }
-
-        $this->_pageDictionary = $factory->newObject($dictionary);
-        $this->_objFactory     = $factory;
-        $this->_attached       = false;
-        $this->_style          = null;
-        $this->_font           = null;
-    }
-
-    /**
-     * Clone page, extract it and dependent objects from the current document,
-     * so it can be used within other docs.
-     *
-     * @internal
-     * @param \ZendPdf\ObjectFactory $factory
-     * @param array $processed
-     * @return \ZendPdf\Page
-     */
-    public function clonePage(ObjectFactory $factory, &$processed)
-    {
-        // Clone dictionary object.
-        // Do it explicitly to prevent sharing page attributes between different
-        // results of clonePage() operation (other resources are still shared)
-        $dictionary = new InternalType\DictionaryObject();
-        foreach ($this->_pageDictionary->getKeys() as $key) {
-            $dictionary->$key = $this->_pageDictionary->$key->makeClone($factory,
-                                                                        $processed,
-                                                                        InternalType\AbstractTypeObject::CLONE_MODE_SKIP_PAGES);
-        }
-
-        $clonedPage = new Page($factory->newObject($dictionary), $factory);
-        $clonedPage->_attached = false;
-
-        return $clonedPage;
-    }
-
-    /**
-     * Retrive PDF file reference to the page
-     *
-     * @internal
-     * @return \ZendPdf\InternalType\DictionaryObject
-     */
-    public function getPageDictionary()
-    {
-        return $this->_pageDictionary;
-    }
-
-    /**
-     * Dump current drawing instructions into the content stream.
-     *
-     * @todo Don't forget to close all current graphics operations (like path drawing)
-     *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    public function flush()
-    {
-        if ($this->_saveCount != 0) {
-            throw new Exception\LogicException('Saved graphics state is not restored');
-        }
-
-        if ($this->_contents == '') {
-            return;
-        }
-
-        if ($this->_pageDictionary->Contents->getType() != InternalType\AbstractTypeObject::TYPE_ARRAY) {
-            /**
-             * It's a stream object.
-             * Prepare Contents page attribute for update.
-             */
-            $this->_pageDictionary->touch();
-
-            $currentPageContents = $this->_pageDictionary->Contents;
-            $this->_pageDictionary->Contents = new InternalType\ArrayObject();
-            $this->_pageDictionary->Contents->items[] = $currentPageContents;
-        } else {
-            $this->_pageDictionary->Contents->touch();
-        }
-
-        if ((!$this->_safeGS)  &&  (count($this->_pageDictionary->Contents->items) != 0)) {
-            /**
-             * Page already has some content which is not treated as safe.
-             *
-             * Add save/restore GS operators
-             */
-            $this->_addProcSet('PDF');
-
-            $newContentsArray = new InternalType\ArrayObject();
-            $newContentsArray->items[] = $this->_objFactory->newStreamObject(" q\n");
-            foreach ($this->_pageDictionary->Contents->items as $contentStream) {
-                $newContentsArray->items[] = $contentStream;
-            }
-            $newContentsArray->items[] = $this->_objFactory->newStreamObject(" Q\n");
-
-            $this->_pageDictionary->touch();
-            $this->_pageDictionary->Contents = $newContentsArray;
-
-            $this->_safeGS = true;
-        }
-
-        $this->_pageDictionary->Contents->items[] =
-                $this->_objFactory->newStreamObject($this->_contents);
-
-        $this->_contents = '';
-    }
-
-    /**
-     * Prepare page to be rendered into PDF.
-     *
-     * @todo Don't forget to close all current graphics operations (like path drawing)
-     *
-     * @param \ZendPdf\ObjectFactory $objFactory
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    public function render(ObjectFactory $objFactory)
-    {
-        $this->flush();
-
-        if ($objFactory === $this->_objFactory) {
-            // Page is already attached to the document.
-            return;
-        }
-
-        if ($this->_attached) {
-            throw new Exception\LogicException('Page is attached to other document. Use clone $page to get it context free.');
-        } else {
-            $objFactory->attach($this->_objFactory);
-        }
-    }
-
-
-
-    /**
      * Set fill color.
      *
      * @param Color\ColorInterface $color
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function setFillColor(Color\ColorInterface $color)
     {
@@ -555,7 +519,7 @@ class Page
      * Set line color.
      *
      * @param ColorInterface $color
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function setLineColor(Color\ColorInterface $color)
     {
@@ -569,7 +533,7 @@ class Page
      * Set line width.
      *
      * @param float $width
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function setLineWidth($width)
     {
@@ -588,18 +552,18 @@ class Page
      *
      * @param array $pattern
      * @param array $phase
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function setLineDashingPattern($pattern, $phase = 0)
     {
         $this->_addProcSet('PDF');
 
         if ($pattern === self::LINE_DASHING_SOLID) {
-            $pattern = array();
-            $phase   = 0;
+            $pattern = [];
+            $phase = 0;
         }
 
-        $dashPattern  = new InternalType\ArrayObject();
+        $dashPattern = new InternalType\ArrayObject();
         $phaseEleemnt = new InternalType\NumericObject($phase);
 
         foreach ($pattern as $dashItem) {
@@ -608,49 +572,7 @@ class Page
         }
 
         $this->_contents .= $dashPattern->toString() . ' '
-                         . $phaseEleemnt->toString() . " d\n";
-
-        return $this;
-    }
-
-    /**
-     * Set current font.
-     *
-     * @param \ZendPdf\Resource\Font\AbstractFont $font
-     * @param float $fontSize
-     * @return \ZendPdf\Page
-     */
-    public function setFont(Resource\Font\AbstractFont $font, $fontSize)
-    {
-        $this->_addProcSet('Text');
-        $fontName = $this->_attachResource('Font', $font);
-
-        $this->_font     = $font;
-        $this->_fontSize = $fontSize;
-
-        $fontNameObj = new InternalType\NameObject($fontName);
-        $fontSizeObj = new InternalType\NumericObject($fontSize);
-        $this->_contents .= $fontNameObj->toString() . ' ' . $fontSizeObj->toString() . " Tf\n";
-
-        return $this;
-    }
-
-    /**
-     * Set the style to use for future drawing operations on this page
-     *
-     * @param \ZendPdf\Style $style
-     * @return \ZendPdf\Page
-     */
-    public function setStyle(Style $style)
-    {
-        $this->_style = $style;
-
-        $this->_addProcSet('Text');
-        $this->_addProcSet('PDF');
-        if ($style->getFont() !== null) {
-            $this->setFont($style->getFont(), $style->getFontSize());
-        }
-        $this->_contents .= $style->instructions($this->_pageDictionary->Resources);
+            . $phaseEleemnt->toString() . " d\n";
 
         return $this;
     }
@@ -667,16 +589,16 @@ class Page
      *
      * @param float $alpha
      * @param string $mode
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     * @return \ZendPdf\Page
+     * @return Page
+     * @throws ExceptionInterface
      */
     public function setAlpha($alpha, $mode = 'Normal')
     {
-        if (!in_array($mode, array('Normal', 'Multiply', 'Screen', 'Overlay', 'Darken', 'Lighten', 'ColorDodge',
-                                   'ColorBurn', 'HardLight', 'SoftLight', 'Difference', 'Exclusion'))) {
+        if (!in_array($mode, ['Normal', 'Multiply', 'Screen', 'Overlay', 'Darken', 'Lighten', 'ColorDodge',
+            'ColorBurn', 'HardLight', 'SoftLight', 'Difference', 'Exclusion'])) {
             throw new Exception\InvalidArgumentException('Unsupported transparency mode.');
         }
-        if (!is_numeric($alpha)  ||  $alpha < 0  ||  $alpha > 1) {
+        if (!is_numeric($alpha) || $alpha < 0 || $alpha > 1) {
             throw new Exception\InvalidArgumentException('Alpha value must be numeric between 0 (transparent) and 1 (opaque).');
         }
 
@@ -688,7 +610,7 @@ class Page
         // Check if Resources dictionary contains ExtGState entry
         if ($resources->ExtGState === null) {
             $resources->touch();
-            $resources->ExtGState = new InternalType\DictionaryObject();
+            $resources->ExtGState = new DictionaryObject();
         } else {
             $resources->ExtGState->touch();
         }
@@ -699,11 +621,11 @@ class Page
         } while ($resources->ExtGState->$gStateName !== null);
 
 
-        $gStateDictionary       = new InternalType\DictionaryObject();
+        $gStateDictionary = new DictionaryObject();
         $gStateDictionary->Type = new InternalType\NameObject('ExtGState');
-        $gStateDictionary->BM   = new InternalType\NameObject($mode);
-        $gStateDictionary->CA   = new InternalType\NumericObject($alpha);
-        $gStateDictionary->ca   = new InternalType\NumericObject($alpha);
+        $gStateDictionary->BM = new InternalType\NameObject($mode);
+        $gStateDictionary->CA = new InternalType\NumericObject($alpha);
+        $gStateDictionary->ca = new InternalType\NumericObject($alpha);
 
         $resources->ExtGState->$gStateName = $this->_objFactory->newObject($gStateDictionary);
 
@@ -713,15 +635,36 @@ class Page
         return $this;
     }
 
-
     /**
      * Get current font.
      *
-     * @return \ZendPdf\Resource\Font\AbstractFont $font
+     * @return AbstractFont $font
      */
     public function getFont()
     {
         return $this->_font;
+    }
+
+    /**
+     * Set current font.
+     *
+     * @param AbstractFont $font
+     * @param float $fontSize
+     * @return Page
+     */
+    public function setFont(Resource\Font\AbstractFont $font, $fontSize)
+    {
+        $this->_addProcSet('Text');
+        $fontName = $this->_attachResource('Font', $font);
+
+        $this->_font = $font;
+        $this->_fontSize = $fontSize;
+
+        $fontNameObj = new InternalType\NameObject($fontName);
+        $fontSizeObj = new InternalType\NumericObject($fontSize);
+        $this->_contents .= $fontNameObj->toString() . ' ' . $fontSizeObj->toString() . " Tf\n";
+
+        return $this;
     }
 
     /**
@@ -731,8 +674,8 @@ class Page
      *
      * returns array of \ZendPdf\InternalType\DictionaryObject objects
      *
-     * @internal
      * @return array
+     * @internal
      */
     public function extractResources()
     {
@@ -745,31 +688,31 @@ class Page
      * returns array of \ZendPdf\Resource\Font\Extracted objects
      *
      * @return array
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function extractFonts()
     {
         if ($this->_pageDictionary->Resources->Font === null) {
             // Page doesn't have any font attached
             // Return empty array
-            return array();
+            return [];
         }
 
         $fontResources = $this->_pageDictionary->Resources->Font;
 
-        $fontResourcesUnique = array();
+        $fontResourcesUnique = [];
         foreach ($fontResources->getKeys() as $fontResourceName) {
             $fontDictionary = $fontResources->$fontResourceName;
 
-            if (! ($fontDictionary instanceof InternalType\IndirectObjectReference  ||
-                   $fontDictionary instanceof InternalType\IndirectObject) ) {
+            if (!($fontDictionary instanceof InternalType\IndirectObjectReference ||
+                $fontDictionary instanceof InternalType\IndirectObject)) {
                 throw new Exception\CorruptedPdfException('Font dictionary has to be an indirect object or object reference.');
             }
 
             $fontResourcesUnique[spl_object_hash($fontDictionary->getObject())] = $fontDictionary;
         }
 
-        $fonts = array();
+        $fonts = [];
         foreach ($fontResourcesUnique as $resourceId => $fontDictionary) {
             try {
                 // Try to extract font
@@ -792,8 +735,8 @@ class Page
      *
      * $fontName should be specified in UTF-8 encoding
      *
-     * @return \ZendPdf\Resource\Font\Extracted|null
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @return Extracted|null
+     * @throws ExceptionInterface
      */
     public function extractFont($fontName)
     {
@@ -804,13 +747,13 @@ class Page
 
         $fontResources = $this->_pageDictionary->Resources->Font;
 
-        $fontResourcesUnique = array();
+        $fontResourcesUnique = [];
 
         foreach ($fontResources->getKeys() as $fontResourceName) {
             $fontDictionary = $fontResources->$fontResourceName;
 
-            if (! ($fontDictionary instanceof InternalType\IndirectObjectReference  ||
-                   $fontDictionary instanceof InternalType\IndirectObject) ) {
+            if (!($fontDictionary instanceof InternalType\IndirectObjectReference ||
+                $fontDictionary instanceof InternalType\IndirectObject)) {
                 throw new Exception\CorruptedPdfException('Font dictionary has to be an indirect object or object reference.');
             }
 
@@ -855,22 +798,41 @@ class Page
     /**
      * Return the style, applied to the page.
      *
-     * @return \ZendPdf\Style|null
+     * @return Style|null
      */
     public function getStyle()
     {
         return $this->_style;
     }
 
+    /**
+     * Set the style to use for future drawing operations on this page
+     *
+     * @param Style $style
+     * @return Page
+     */
+    public function setStyle(Style $style)
+    {
+        $this->_style = $style;
+
+        $this->_addProcSet('Text');
+        $this->_addProcSet('PDF');
+        if ($style->getFont() !== null) {
+            $this->setFont($style->getFont(), $style->getFontSize());
+        }
+        $this->_contents .= $style->instructions($this->_pageDictionary->Resources);
+
+        return $this;
+    }
 
     /**
      * Save the graphics state of this page.
      * This takes a snapshot of the currently applied style, position, clipping area and
      * any rotation/translation/scaling that has been applied.
      *
+     * @return Page
+     * @throws ExceptionInterface
      * @todo check for the open paths
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     * @return \ZendPdf\Page
      */
     public function saveGS()
     {
@@ -885,8 +847,8 @@ class Page
     /**
      * Restore the graphics state that was saved with the last call to saveGS().
      *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     * @return \ZendPdf\Page
+     * @return Page
+     * @throws ExceptionInterface
      */
     public function restoreGS()
     {
@@ -898,22 +860,21 @@ class Page
         return $this;
     }
 
-
     /**
      * Intersect current clipping area with a circle
      *
-     * @param float $x           X-coordinate for the middle of the circle
-     * @param float $y           Y-coordinate for the middle of the circle
-     * @param float $radius      Radius of the circle
-     * @param float $startAngle  Starting angle of the circle in radians
-     * @param float $endAngle    Ending angle of the circle in radians
-     * @return \ZendPdf\Page    Fluid interface
+     * @param float $x X-coordinate for the middle of the circle
+     * @param float $y Y-coordinate for the middle of the circle
+     * @param float $radius Radius of the circle
+     * @param float $startAngle Starting angle of the circle in radians
+     * @param float $endAngle Ending angle of the circle in radians
+     * @return Page    Fluid interface
      */
     public function clipCircle($x, $y, $radius, $startAngle = null, $endAngle = null)
     {
         $this->clipEllipse($x - $radius, $y - $radius,
-                           $x + $radius, $y + $radius,
-                           $startAngle, $endAngle);
+            $x + $radius, $y + $radius,
+            $startAngle, $endAngle);
 
         return $this;
     }
@@ -925,15 +886,15 @@ class Page
      * drawEllipse($x1, $y1, $x2, $y2);
      * drawEllipse($x1, $y1, $x2, $y2, $startAngle, $endAngle);
      *
+     * @param float $x1 X-coordinate of left upper corner of the ellipse
+     * @param float $y1 Y-coordinate of left upper corner of the ellipse
+     * @param float $x2 X-coordinate of right lower corner of the ellipse
+     * @param float $y2 Y-coordinate of right lower corner of the ellipse
+     * @param float $startAngle Starting angle of the ellipse in radians
+     * @param float $endAngle Ending angle of the ellipse in radians
+     * @return Page    Fluid interface
      * @todo process special cases with $x2-$x1 == 0 or $y2-$y1 == 0
      *
-     * @param float $x1          X-coordinate of left upper corner of the ellipse
-     * @param float $y1          Y-coordinate of left upper corner of the ellipse
-     * @param float $x2          X-coordinate of right lower corner of the ellipse
-     * @param float $y2          Y-coordinate of right lower corner of the ellipse
-     * @param float $startAngle  Starting angle of the ellipse in radians
-     * @param float $endAngle    Ending angle of the ellipse in radians
-     * @return \ZendPdf\Page    Fluid interface
      */
     public function clipEllipse($x1, $y1, $x2, $y2, $startAngle = null, $endAngle = null)
     {
@@ -941,82 +902,85 @@ class Page
 
         if ($x2 < $x1) {
             $temp = $x1;
-            $x1   = $x2;
-            $x2   = $temp;
+            $x1 = $x2;
+            $x2 = $temp;
         }
         if ($y2 < $y1) {
             $temp = $y1;
-            $y1   = $y2;
-            $y2   = $temp;
+            $y1 = $y2;
+            $y2 = $temp;
         }
 
-        $x = ($x1 + $x2)/2.;
-        $y = ($y1 + $y2)/2.;
+        $x = ($x1 + $x2) / 2.;
+        $y = ($y1 + $y2) / 2.;
 
         $xC = new InternalType\NumericObject($x);
         $yC = new InternalType\NumericObject($y);
 
         if ($startAngle !== null) {
-            if ($startAngle != 0) { $startAngle = fmod($startAngle, M_PI*2); }
-            if ($endAngle   != 0) { $endAngle   = fmod($endAngle,   M_PI*2); }
-
-            if ($startAngle > $endAngle) {
-                $endAngle += M_PI*2;
+            if ($startAngle != 0) {
+                $startAngle = fmod($startAngle, M_PI * 2);
+            }
+            if ($endAngle != 0) {
+                $endAngle = fmod($endAngle, M_PI * 2);
             }
 
-            $clipPath    = $xC->toString() . ' ' . $yC->toString() . " m\n";
-            $clipSectors = (int)ceil(($endAngle - $startAngle)/M_PI_4);
-            $clipRadius  = max($x2 - $x1, $y2 - $y1);
+            if ($startAngle > $endAngle) {
+                $endAngle += M_PI * 2;
+            }
 
-            for($count = 0; $count <= $clipSectors; $count++) {
-                $pAngle = $startAngle + ($endAngle - $startAngle)*$count/(float)$clipSectors;
+            $clipPath = $xC->toString() . ' ' . $yC->toString() . " m\n";
+            $clipSectors = (int)ceil(($endAngle - $startAngle) / M_PI_4);
+            $clipRadius = max($x2 - $x1, $y2 - $y1);
 
-                $pX = new InternalType\NumericObject($x + cos($pAngle)*$clipRadius);
-                $pY = new InternalType\NumericObject($y + sin($pAngle)*$clipRadius);
+            for ($count = 0; $count <= $clipSectors; $count++) {
+                $pAngle = $startAngle + ($endAngle - $startAngle) * $count / (float)$clipSectors;
+
+                $pX = new InternalType\NumericObject($x + cos($pAngle) * $clipRadius);
+                $pY = new InternalType\NumericObject($y + sin($pAngle) * $clipRadius);
                 $clipPath .= $pX->toString() . ' ' . $pY->toString() . " l\n";
             }
 
             $this->_contents .= $clipPath . "h\nW\nn\n";
         }
 
-        $xLeft  = new InternalType\NumericObject($x1);
+        $xLeft = new InternalType\NumericObject($x1);
         $xRight = new InternalType\NumericObject($x2);
-        $yUp    = new InternalType\NumericObject($y2);
-        $yDown  = new InternalType\NumericObject($y1);
+        $yUp = new InternalType\NumericObject($y2);
+        $yDown = new InternalType\NumericObject($y1);
 
-        $xDelta  = 2*(M_SQRT2 - 1)*($x2 - $x1)/3.;
-        $yDelta  = 2*(M_SQRT2 - 1)*($y2 - $y1)/3.;
+        $xDelta = 2 * (M_SQRT2 - 1) * ($x2 - $x1) / 3.;
+        $yDelta = 2 * (M_SQRT2 - 1) * ($y2 - $y1) / 3.;
         $xr = new InternalType\NumericObject($x + $xDelta);
         $xl = new InternalType\NumericObject($x - $xDelta);
         $yu = new InternalType\NumericObject($y + $yDelta);
         $yd = new InternalType\NumericObject($y - $yDelta);
 
         $this->_contents .= $xC->toString() . ' ' . $yUp->toString() . " m\n"
-                         .  $xr->toString() . ' ' . $yUp->toString() . ' '
-                         .    $xRight->toString() . ' ' . $yu->toString() . ' '
-                         .      $xRight->toString() . ' ' . $yC->toString() . " c\n"
-                         .  $xRight->toString() . ' ' . $yd->toString() . ' '
-                         .    $xr->toString() . ' ' . $yDown->toString() . ' '
-                         .      $xC->toString() . ' ' . $yDown->toString() . " c\n"
-                         .  $xl->toString() . ' ' . $yDown->toString() . ' '
-                         .    $xLeft->toString() . ' ' . $yd->toString() . ' '
-                         .      $xLeft->toString() . ' ' . $yC->toString() . " c\n"
-                         .  $xLeft->toString() . ' ' . $yu->toString() . ' '
-                         .    $xl->toString() . ' ' . $yUp->toString() . ' '
-                         .      $xC->toString() . ' ' . $yUp->toString() . " c\n"
-                         .  "h\nW\nn\n";
+            . $xr->toString() . ' ' . $yUp->toString() . ' '
+            . $xRight->toString() . ' ' . $yu->toString() . ' '
+            . $xRight->toString() . ' ' . $yC->toString() . " c\n"
+            . $xRight->toString() . ' ' . $yd->toString() . ' '
+            . $xr->toString() . ' ' . $yDown->toString() . ' '
+            . $xC->toString() . ' ' . $yDown->toString() . " c\n"
+            . $xl->toString() . ' ' . $yDown->toString() . ' '
+            . $xLeft->toString() . ' ' . $yd->toString() . ' '
+            . $xLeft->toString() . ' ' . $yC->toString() . " c\n"
+            . $xLeft->toString() . ' ' . $yu->toString() . ' '
+            . $xl->toString() . ' ' . $yUp->toString() . ' '
+            . $xC->toString() . ' ' . $yUp->toString() . " c\n"
+            . "h\nW\nn\n";
 
         return $this;
     }
 
-
     /**
      * Intersect current clipping area with a polygon.
      *
-     * @param array $x  - array of float (the X co-ordinates of the vertices)
-     * @param array $y  - array of float (the Y co-ordinates of the vertices)
+     * @param array $x - array of float (the X co-ordinates of the vertices)
+     * @param array $y - array of float (the Y co-ordinates of the vertices)
      * @param integer $fillMethod
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function clipPolygon($x, $y, $fillMethod = self::FILL_METHOD_NON_ZERO_WINDING)
     {
@@ -1054,20 +1018,20 @@ class Page
      * @param float $y1
      * @param float $x2
      * @param float $y2
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function clipRectangle($x1, $y1, $x2, $y2)
     {
         $this->_addProcSet('PDF');
 
-        $x1Obj      = new InternalType\NumericObject($x1);
-        $y1Obj      = new InternalType\NumericObject($y1);
-        $widthObj   = new InternalType\NumericObject($x2 - $x1);
+        $x1Obj = new InternalType\NumericObject($x1);
+        $y1Obj = new InternalType\NumericObject($y1);
+        $widthObj = new InternalType\NumericObject($x2 - $x1);
         $height2Obj = new InternalType\NumericObject($y2 - $y1);
 
         $this->_contents .= $x1Obj->toString() . ' ' . $y1Obj->toString() . ' '
-                         .      $widthObj->toString() . ' ' . $height2Obj->toString() . " re\n"
-                         .  " W\nn\n";
+            . $widthObj->toString() . ' ' . $height2Obj->toString() . " re\n"
+            . " W\nn\n";
 
         return $this;
     }
@@ -1080,7 +1044,7 @@ class Page
      * @param float $y1
      * @param float $x2
      * @param float $y2
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function drawContentStream($cs, $x1, $y1, $x2, $y2)
     {
@@ -1110,13 +1074,13 @@ class Page
      * @param mixed $param4
      * @param mixed $param5
      * @param mixed $param6
-     * @return \ZendPdf\Page
+     * @return Page
      */
-    public function  drawCircle($x, $y, $radius, $param4 = null, $param5 = null, $param6 = null)
+    public function drawCircle($x, $y, $radius, $param4 = null, $param5 = null, $param6 = null)
     {
         $this->drawEllipse($x - $radius, $y - $radius,
-                           $x + $radius, $y + $radius,
-                           $param4, $param5, $param6);
+            $x + $radius, $y + $radius,
+            $param4, $param5, $param6);
 
         return $this;
     }
@@ -1130,8 +1094,6 @@ class Page
      * drawEllipse($x1, $y1, $x2, $y2, $startAngle, $endAngle);
      * drawEllipse($x1, $y1, $x2, $y2, $startAngle, $endAngle, $fillType);
      *
-     * @todo process special cases with $x2-$x1 == 0 or $y2-$y1 == 0
-     *
      * @param float $x1
      * @param float $y1
      * @param float $x2
@@ -1139,7 +1101,9 @@ class Page
      * @param mixed $param5
      * @param mixed $param6
      * @param mixed $param7
-     * @return \ZendPdf\Page
+     * @return Page
+     * @todo process special cases with $x2-$x1 == 0 or $y2-$y1 == 0
+     *
      */
     public function drawEllipse($x1, $y1, $x2, $y2, $param5 = null, $param6 = null, $param7 = null)
     {
@@ -1155,7 +1119,7 @@ class Page
             // drawEllipse($x1, $y1, $x2, $y2, $startAngle, $endAngle);
             // drawEllipse($x1, $y1, $x2, $y2, $startAngle, $endAngle, $fillType);
             $startAngle = $param5;
-            $endAngle   = $param6;
+            $endAngle = $param6;
 
             if ($param7 === null) {
                 $fillType = self::SHAPE_DRAW_FILL_AND_STROKE;
@@ -1168,69 +1132,73 @@ class Page
 
         if ($x2 < $x1) {
             $temp = $x1;
-            $x1   = $x2;
-            $x2   = $temp;
+            $x1 = $x2;
+            $x2 = $temp;
         }
         if ($y2 < $y1) {
             $temp = $y1;
-            $y1   = $y2;
-            $y2   = $temp;
+            $y1 = $y2;
+            $y2 = $temp;
         }
 
-        $x = ($x1 + $x2)/2.;
-        $y = ($y1 + $y2)/2.;
+        $x = ($x1 + $x2) / 2.;
+        $y = ($y1 + $y2) / 2.;
 
         $xC = new InternalType\NumericObject($x);
         $yC = new InternalType\NumericObject($y);
 
         if ($startAngle !== null) {
-            if ($startAngle != 0) { $startAngle = fmod($startAngle, M_PI*2); }
-            if ($endAngle   != 0) { $endAngle   = fmod($endAngle,   M_PI*2); }
-
-            if ($startAngle > $endAngle) {
-                $endAngle += M_PI*2;
+            if ($startAngle != 0) {
+                $startAngle = fmod($startAngle, M_PI * 2);
+            }
+            if ($endAngle != 0) {
+                $endAngle = fmod($endAngle, M_PI * 2);
             }
 
-            $clipPath    = $xC->toString() . ' ' . $yC->toString() . " m\n";
-            $clipSectors = (int)ceil(($endAngle - $startAngle)/M_PI_4);
-            $clipRadius  = max($x2 - $x1, $y2 - $y1);
+            if ($startAngle > $endAngle) {
+                $endAngle += M_PI * 2;
+            }
 
-            for($count = 0; $count <= $clipSectors; $count++) {
-                $pAngle = $startAngle + ($endAngle - $startAngle)*$count/(float)$clipSectors;
+            $clipPath = $xC->toString() . ' ' . $yC->toString() . " m\n";
+            $clipSectors = (int)ceil(($endAngle - $startAngle) / M_PI_4);
+            $clipRadius = max($x2 - $x1, $y2 - $y1);
 
-                $pX = new InternalType\NumericObject($x + cos($pAngle)*$clipRadius);
-                $pY = new InternalType\NumericObject($y + sin($pAngle)*$clipRadius);
+            for ($count = 0; $count <= $clipSectors; $count++) {
+                $pAngle = $startAngle + ($endAngle - $startAngle) * $count / (float)$clipSectors;
+
+                $pX = new InternalType\NumericObject($x + cos($pAngle) * $clipRadius);
+                $pY = new InternalType\NumericObject($y + sin($pAngle) * $clipRadius);
                 $clipPath .= $pX->toString() . ' ' . $pY->toString() . " l\n";
             }
 
             $this->_contents .= "q\n" . $clipPath . "h\nW\nn\n";
         }
 
-        $xLeft  = new InternalType\NumericObject($x1);
+        $xLeft = new InternalType\NumericObject($x1);
         $xRight = new InternalType\NumericObject($x2);
-        $yUp    = new InternalType\NumericObject($y2);
-        $yDown  = new InternalType\NumericObject($y1);
+        $yUp = new InternalType\NumericObject($y2);
+        $yDown = new InternalType\NumericObject($y1);
 
-        $xDelta  = 2*(M_SQRT2 - 1)*($x2 - $x1)/3.;
-        $yDelta  = 2*(M_SQRT2 - 1)*($y2 - $y1)/3.;
+        $xDelta = 2 * (M_SQRT2 - 1) * ($x2 - $x1) / 3.;
+        $yDelta = 2 * (M_SQRT2 - 1) * ($y2 - $y1) / 3.;
         $xr = new InternalType\NumericObject($x + $xDelta);
         $xl = new InternalType\NumericObject($x - $xDelta);
         $yu = new InternalType\NumericObject($y + $yDelta);
         $yd = new InternalType\NumericObject($y - $yDelta);
 
         $this->_contents .= $xC->toString() . ' ' . $yUp->toString() . " m\n"
-                         .  $xr->toString() . ' ' . $yUp->toString() . ' '
-                         .    $xRight->toString() . ' ' . $yu->toString() . ' '
-                         .      $xRight->toString() . ' ' . $yC->toString() . " c\n"
-                         .  $xRight->toString() . ' ' . $yd->toString() . ' '
-                         .    $xr->toString() . ' ' . $yDown->toString() . ' '
-                         .      $xC->toString() . ' ' . $yDown->toString() . " c\n"
-                         .  $xl->toString() . ' ' . $yDown->toString() . ' '
-                         .    $xLeft->toString() . ' ' . $yd->toString() . ' '
-                         .      $xLeft->toString() . ' ' . $yC->toString() . " c\n"
-                         .  $xLeft->toString() . ' ' . $yu->toString() . ' '
-                         .    $xl->toString() . ' ' . $yUp->toString() . ' '
-                         .      $xC->toString() . ' ' . $yUp->toString() . " c\n";
+            . $xr->toString() . ' ' . $yUp->toString() . ' '
+            . $xRight->toString() . ' ' . $yu->toString() . ' '
+            . $xRight->toString() . ' ' . $yC->toString() . " c\n"
+            . $xRight->toString() . ' ' . $yd->toString() . ' '
+            . $xr->toString() . ' ' . $yDown->toString() . ' '
+            . $xC->toString() . ' ' . $yDown->toString() . " c\n"
+            . $xl->toString() . ' ' . $yDown->toString() . ' '
+            . $xLeft->toString() . ' ' . $yd->toString() . ' '
+            . $xLeft->toString() . ' ' . $yC->toString() . " c\n"
+            . $xLeft->toString() . ' ' . $yu->toString() . ' '
+            . $xl->toString() . ' ' . $yUp->toString() . ' '
+            . $xC->toString() . ' ' . $yUp->toString() . " c\n";
 
         switch ($fillType) {
             case self::SHAPE_DRAW_FILL_AND_STROKE:
@@ -1254,41 +1222,77 @@ class Page
     /**
      * Draw an image at the specified position on the page.
      *
-     * @param \ZendPdf\Image $image
+     * @param Image $image
      * @param float $x1
      * @param float $y1
      * @param float $x2
      * @param float $y2
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function drawImage(Resource\Image\AbstractImage $image, $x1, $y1, $x2, $y2)
     {
         $this->_addProcSet('PDF');
 
-        $imageName    = $this->_attachResource('XObject', $image);
+        $imageName = $this->_attachResource('XObject', $image);
         $imageNameObj = new InternalType\NameObject($imageName);
 
-        $x1Obj     = new InternalType\NumericObject($x1);
-        $y1Obj     = new InternalType\NumericObject($y1);
-        $widthObj  = new InternalType\NumericObject($x2 - $x1);
+        $x1Obj = new InternalType\NumericObject($x1);
+        $y1Obj = new InternalType\NumericObject($y1);
+        $widthObj = new InternalType\NumericObject($x2 - $x1);
         $heightObj = new InternalType\NumericObject($y2 - $y1);
 
         $this->_contents .= "q\n"
-                         .  '1 0 0 1 ' . $x1Obj->toString() . ' ' . $y1Obj->toString() . " cm\n"
-                         .  $widthObj->toString() . ' 0 0 ' . $heightObj->toString() . " 0 0 cm\n"
-                         .  $imageNameObj->toString() . " Do\n"
-                         .  "Q\n";
+            . '1 0 0 1 ' . $x1Obj->toString() . ' ' . $y1Obj->toString() . " cm\n"
+            . $widthObj->toString() . ' 0 0 ' . $heightObj->toString() . " 0 0 cm\n"
+            . $imageNameObj->toString() . " Do\n"
+            . "Q\n";
 
         return $this;
     }
 
     /**
+     * Attach resource to the page
+     *
+     * @param string $type
+     * @param AbstractResource $resource
+     * @return string
+     */
+    protected function _attachResource($type, Resource\AbstractResource $resource)
+    {
+        // Check that Resources dictionary contains appropriate resource set
+        if ($this->_pageDictionary->Resources->$type === null) {
+            $this->_pageDictionary->Resources->touch();
+            $this->_pageDictionary->Resources->$type = new DictionaryObject();
+        } else {
+            $this->_pageDictionary->Resources->$type->touch();
+        }
+
+        // Check, that resource is already attached to resource set.
+        $resObject = $resource->getResource();
+        foreach ($this->_pageDictionary->Resources->$type->getKeys() as $ResID) {
+            if ($this->_pageDictionary->Resources->$type->$ResID === $resObject) {
+                return $ResID;
+            }
+        }
+
+        $idCounter = 1;
+        do {
+            $newResName = $type[0] . $idCounter++;
+        } while ($this->_pageDictionary->Resources->$type->$newResName !== null);
+
+        $this->_pageDictionary->Resources->$type->$newResName = $resObject;
+        $this->_objFactory->attach($resource->getFactory());
+
+        return $newResName;
+    }
+
+    /**
      * Draw a LayoutBox at the specified position on the page.
      *
-     * @param \ZendPdf\InternalType\LayoutBox $box
+     * @param LayoutBox $box
      * @param float $x
      * @param float $y
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function drawLayoutBox($box, $x, $y)
     {
@@ -1303,7 +1307,7 @@ class Page
      * @param float $y1
      * @param float $x2
      * @param float $y2
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function drawLine($x1, $y1, $x2, $y2)
     {
@@ -1315,7 +1319,7 @@ class Page
         $y2Obj = new InternalType\NumericObject($y2);
 
         $this->_contents .= $x1Obj->toString() . ' ' . $y1Obj->toString() . " m\n"
-                         .  $x2Obj->toString() . ' ' . $y2Obj->toString() . " l\n S\n";
+            . $x2Obj->toString() . ' ' . $y2Obj->toString() . " l\n S\n";
 
         return $this;
     }
@@ -1328,11 +1332,11 @@ class Page
      * See detailed description of these methods in a PDF documentation
      * (section 4.4.2 Path painting Operators, Filling)
      *
-     * @param array $x  - array of float (the X co-ordinates of the vertices)
-     * @param array $y  - array of float (the Y co-ordinates of the vertices)
+     * @param array $x - array of float (the X co-ordinates of the vertices)
+     * @param array $y - array of float (the Y co-ordinates of the vertices)
      * @param integer $fillType
      * @param integer $fillMethod
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function drawPolygon($x, $y,
                                 $fillType = self::SHAPE_DRAW_FILL_AND_STROKE,
@@ -1393,19 +1397,19 @@ class Page
      * @param float $x2
      * @param float $y2
      * @param integer $fillType
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function drawRectangle($x1, $y1, $x2, $y2, $fillType = self::SHAPE_DRAW_FILL_AND_STROKE)
     {
         $this->_addProcSet('PDF');
 
-        $x1Obj      = new InternalType\NumericObject($x1);
-        $y1Obj      = new InternalType\NumericObject($y1);
-        $widthObj   = new InternalType\NumericObject($x2 - $x1);
+        $x1Obj = new InternalType\NumericObject($x1);
+        $y1Obj = new InternalType\NumericObject($y1);
+        $widthObj = new InternalType\NumericObject($x2 - $x1);
         $height2Obj = new InternalType\NumericObject($y2 - $y1);
 
         $this->_contents .= $x1Obj->toString() . ' ' . $y1Obj->toString() . ' '
-                             .  $widthObj->toString() . ' ' . $height2Obj->toString() . " re\n";
+            . $widthObj->toString() . ' ' . $height2Obj->toString() . " re\n";
 
         switch ($fillType) {
             case self::SHAPE_DRAW_FILL_AND_STROKE:
@@ -1440,7 +1444,7 @@ class Page
      * @param float $y2
      * @param integer|array $radius
      * @param integer $fillType
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function drawRoundedRectangle($x1, $y1, $x2, $y2, $radius,
                                          $fillType = self::SHAPE_DRAW_FILL_AND_STROKE)
@@ -1448,24 +1452,24 @@ class Page
 
         $this->_addProcSet('PDF');
 
-        if(!is_array($radius)) {
-            $radius = array($radius, $radius, $radius, $radius);
+        if (!is_array($radius)) {
+            $radius = [$radius, $radius, $radius, $radius];
         } else {
             for ($i = 0; $i < 4; $i++) {
-                if(!isset($radius[$i])) {
+                if (!isset($radius[$i])) {
                     $radius[$i] = 0;
                 }
             }
         }
 
-        $topLeftX      = $x1;
-        $topLeftY      = $y2;
-        $topRightX     = $x2;
-        $topRightY     = $y2;
-        $bottomRightX  = $x2;
-        $bottomRightY  = $y1;
-        $bottomLeftX   = $x1;
-        $bottomLeftY   = $y1;
+        $topLeftX = $x1;
+        $topLeftY = $y2;
+        $topRightX = $x2;
+        $topRightY = $y2;
+        $bottomRightX = $x2;
+        $bottomRightY = $y1;
+        $bottomLeftX = $x1;
+        $bottomLeftY = $y1;
 
         //draw top side
         $x1Obj = new InternalType\NumericObject($topLeftX + $radius[0]);
@@ -1484,9 +1488,9 @@ class Page
             $x3Obj = new InternalType\NumericObject($topRightX);
             $y3Obj = new InternalType\NumericObject($topRightY - $radius[1]);
             $this->_contents .= $x1Obj->toString() . ' ' . $y1Obj->toString() . ' '
-                              . $x2Obj->toString() . ' ' . $y2Obj->toString() . ' '
-                              . $x3Obj->toString() . ' ' . $y3Obj->toString() . ' '
-                              . " c\n";
+                . $x2Obj->toString() . ' ' . $y2Obj->toString() . ' '
+                . $x3Obj->toString() . ' ' . $y3Obj->toString() . ' '
+                . " c\n";
         }
 
         //draw right side
@@ -1503,9 +1507,9 @@ class Page
             $x3Obj = new InternalType\NumericObject($bottomRightX - $radius[2]);
             $y3Obj = new InternalType\NumericObject($bottomRightY);
             $this->_contents .= $x1Obj->toString() . ' ' . $y1Obj->toString() . ' '
-                              . $x2Obj->toString() . ' ' . $y2Obj->toString() . ' '
-                              . $x3Obj->toString() . ' ' . $y3Obj->toString() . ' '
-                              . " c\n";
+                . $x2Obj->toString() . ' ' . $y2Obj->toString() . ' '
+                . $x3Obj->toString() . ' ' . $y3Obj->toString() . ' '
+                . " c\n";
         }
 
         //draw bottom side
@@ -1522,9 +1526,9 @@ class Page
             $x3Obj = new InternalType\NumericObject($bottomLeftX);
             $y3Obj = new InternalType\NumericObject($bottomLeftY + $radius[3]);
             $this->_contents .= $x1Obj->toString() . ' ' . $y1Obj->toString() . ' '
-                              . $x2Obj->toString() . ' ' . $y2Obj->toString() . ' '
-                              . $x3Obj->toString() . ' ' . $y3Obj->toString() . ' '
-                              . " c\n";
+                . $x2Obj->toString() . ' ' . $y2Obj->toString() . ' '
+                . $x3Obj->toString() . ' ' . $y3Obj->toString() . ' '
+                . " c\n";
         }
 
         //draw left side
@@ -1541,9 +1545,9 @@ class Page
             $x3Obj = new InternalType\NumericObject($topLeftX + $radius[0]);
             $y3Obj = new InternalType\NumericObject($topLeftY);
             $this->_contents .= $x1Obj->toString() . ' ' . $y1Obj->toString() . ' '
-                              . $x2Obj->toString() . ' ' . $y2Obj->toString() . ' '
-                              . $x3Obj->toString() . ' ' . $y3Obj->toString() . ' '
-                              . " c\n";
+                . $x2Obj->toString() . ' ' . $y2Obj->toString() . ' '
+                . $x3Obj->toString() . ' ' . $y3Obj->toString() . ' '
+                . " c\n";
         }
 
         switch ($fillType) {
@@ -1569,8 +1573,8 @@ class Page
      * @param float $y
      * @param string $charEncoding (optional) Character encoding of source text.
      *   Defaults to current locale.
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     * @return \ZendPdf\Page
+     * @return Page
+     * @throws ExceptionInterface
      */
     public function drawText($text, $x, $y, $charEncoding = '')
     {
@@ -1581,26 +1585,26 @@ class Page
         $this->_addProcSet('Text');
 
         $textObj = new InternalType\StringObject($this->_font->encodeString($text, $charEncoding));
-        $xObj    = new InternalType\NumericObject($x);
-        $yObj    = new InternalType\NumericObject($y);
+        $xObj = new InternalType\NumericObject($x);
+        $yObj = new InternalType\NumericObject($y);
 
         $this->_contents .= "BT\n"
-                         .  $xObj->toString() . ' ' . $yObj->toString() . " Td\n"
-                         .  $textObj->toString() . " Tj\n"
-                         .  "ET\n";
+            . $xObj->toString() . ' ' . $yObj->toString() . " Td\n"
+            . $textObj->toString() . " Tj\n"
+            . "ET\n";
 
         return $this;
     }
 
     /**
      *
-     * @param \ZendPdf\Annotation\AbstractAnnotation $annotation
-     * @return \ZendPdf\Page
+     * @param AbstractAnnotation $annotation
+     * @return Page
      */
     public function attachAnnotation(Annotation\AbstractAnnotation $annotation)
     {
         $annotationDictionary = $annotation->getResource();
-        if (!$annotationDictionary instanceof InternalType\IndirectObject  &&
+        if (!$annotationDictionary instanceof InternalType\IndirectObject &&
             !$annotationDictionary instanceof InternalType\IndirectObjectReference) {
             $annotationDictionary = $this->_objFactory->newObject($annotationDictionary);
         }
@@ -1628,7 +1632,7 @@ class Page
     public function getHeight()
     {
         return $this->_pageDictionary->MediaBox->items[3]->value -
-               $this->_pageDictionary->MediaBox->items[1]->value;
+            $this->_pageDictionary->MediaBox->items[1]->value;
     }
 
     /**
@@ -1639,14 +1643,14 @@ class Page
     public function getWidth()
     {
         return $this->_pageDictionary->MediaBox->items[2]->value -
-               $this->_pageDictionary->MediaBox->items[0]->value;
+            $this->_pageDictionary->MediaBox->items[0]->value;
     }
 
-     /**
+    /**
      * Close the path by drawing a straight line back to it's beginning.
      *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     * @return \ZendPdf\Page
+     * @return Page
+     * @throws ExceptionInterface
      */
     public function pathClose()
     {
@@ -1657,9 +1661,9 @@ class Page
     /**
      * Continue the open path in a straight line to the specified position.
      *
-     * @param float $x  - the X co-ordinate to move to
-     * @param float $y  - the Y co-ordinate to move to
-     * @return \ZendPdf\Page
+     * @param float $x - the X co-ordinate to move to
+     * @param float $y - the Y co-ordinate to move to
+     * @return Page
      */
     public function pathLine($x, $y)
     {
@@ -1671,9 +1675,9 @@ class Page
      * Start a new path at the specified position. If a path has already been started,
      * move the cursor without drawing a line.
      *
-     * @param float $x  - the X co-ordinate to move to
-     * @param float $y  - the Y co-ordinate to move to
-     * @return \ZendPdf\Page
+     * @param float $x - the X co-ordinate to move to
+     * @param float $y - the Y co-ordinate to move to
+     * @return Page
      */
     public function pathMove($x, $y)
     {
@@ -1689,11 +1693,11 @@ class Page
      *
      * @param string $data
      * @param string $procSet (optional) Name of ProcSet to add.
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function rawWrite($data, $procSet = null)
     {
-        if (! empty($procSet)) {
+        if (!empty($procSet)) {
             $this->_addProcSet($procSet);
         }
         $this->_contents .= $data;
@@ -1704,15 +1708,15 @@ class Page
     /**
      * Rotate the page
      *
-     * @param float $x        X coordinate of the rotation point
-     * @param float $y        Y coordinate of the rotation point
-     * @param float $angle    Angle of rotation in radians
-     * @return \ZendPdf\Page Fluid Interface
+     * @param float $x X coordinate of the rotation point
+     * @param float $y Y coordinate of the rotation point
+     * @param float $angle Angle of rotation in radians
+     * @return Page Fluid Interface
      */
     public function rotate($x, $y, $angle)
     {
-        $cos  = new InternalType\NumericObject(cos($angle));
-        $sin  = new InternalType\NumericObject(sin($angle));
+        $cos = new InternalType\NumericObject(cos($angle));
+        $sin = new InternalType\NumericObject(sin($angle));
         $mSin = new InternalType\NumericObject(-$sin->value);
 
         $xObj = new InternalType\NumericObject($x);
@@ -1724,8 +1728,8 @@ class Page
 
         $this->_addProcSet('PDF');
         $this->_contents .= '1 0 0 1 ' . $xObj->toString() . ' ' . $yObj->toString() . " cm\n"
-                         .  $cos->toString() . ' ' . $sin->toString() . ' ' . $mSin->toString() . ' ' . $cos->toString() . " 0 0 cm\n"
-                         .  '1 0 0 1 ' . $mXObj->toString() . ' ' . $mYObj->toString() . " cm\n";
+            . $cos->toString() . ' ' . $sin->toString() . ' ' . $mSin->toString() . ' ' . $cos->toString() . " 0 0 cm\n"
+            . '1 0 0 1 ' . $mXObj->toString() . ' ' . $mYObj->toString() . " cm\n";
 
         return $this;
     }
@@ -1735,7 +1739,7 @@ class Page
      *
      * @param float $xScale - X dimention scale factor
      * @param float $yScale - Y dimention scale factor
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function scale($xScale, $yScale)
     {
@@ -1753,7 +1757,7 @@ class Page
      *
      * @param float $xShift - X coordinate shift
      * @param float $yShift - Y coordinate shift
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function translate($xShift, $yShift)
     {
@@ -1769,11 +1773,11 @@ class Page
     /**
      * Translate coordination system.
      *
-     * @param float $x  - the X co-ordinate of axis skew point
-     * @param float $y  - the Y co-ordinate of axis skew point
+     * @param float $x - the X co-ordinate of axis skew point
+     * @param float $y - the Y co-ordinate of axis skew point
      * @param float $xAngle - X axis skew angle
      * @param float $yAngle - Y axis skew angle
-     * @return \ZendPdf\Page
+     * @return Page
      */
     public function skew($x, $y, $xAngle, $yAngle)
     {
@@ -1788,8 +1792,8 @@ class Page
 
         $this->_addProcSet('PDF');
         $this->_contents .= '1 0 0 1 ' . $xObj->toString() . ' ' . $yObj->toString() . " cm\n"
-                         .  '1 ' . $tanXObj->toString() . ' ' . $tanYObj->toString() . " 1 0 0 cm\n"
-                         .  '1 0 0 1 ' . $mXObj->toString() . ' ' . $mYObj->toString() . " cm\n";
+            . '1 ' . $tanXObj->toString() . ' ' . $tanYObj->toString() . " 1 0 0 cm\n"
+            . '1 0 0 1 ' . $mXObj->toString() . ' ' . $mYObj->toString() . " cm\n";
 
         return $this;
     }

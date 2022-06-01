@@ -10,6 +10,8 @@
 
 namespace ZendPdf\Exception;
 
+use Exception;
+
 /**
  * Exception class for Zend\Pdf.
  *
@@ -17,6 +19,6 @@ namespace ZendPdf\Exception;
  * @package    Zend_PDF
  * @subpackage Zend_PDF_Exception
  */
-class NotImplementedException extends \Exception implements ExceptionInterface
+class NotImplementedException extends Exception implements ExceptionInterface
 {
 }

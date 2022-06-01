@@ -12,8 +12,11 @@ namespace ZendPdf\Resource\Font;
 
 use ZendPdf as Pdf;
 use ZendPdf\BinaryParser\Font\OpenType as OpenTypeFontParser;
+use ZendPdf\BinaryParser\Font\OpenType\AbstractOpenType;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\DictionaryObject;
 
 /**
  * FontDescriptor implementation
@@ -31,7 +34,7 @@ class FontDescriptor
 {
     /**
      * Object constructor
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct()
     {
@@ -52,22 +55,22 @@ class FontDescriptor
      * the PDF viewer will substitute or synthesize a replacement.
      *
      *
-     * @param \ZendPdf\Resource\Font\AbstractFont $font Font
-     * @param \ZendPdf\BinaryParser\Font\OpenType\AbstractOpenType $fontParser Font parser object containing parsed TrueType file.
+     * @param AbstractFont $font Font
+     * @param AbstractOpenType $fontParser Font parser object containing parsed TrueType file.
      * @param integer $embeddingOptions Options for font embedding.
-     * @return \ZendPdf\InternalType\DictionaryObject
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @return DictionaryObject
+     * @throws ExceptionInterface
      */
-    public static function factory(AbstractFont $font,
-                                   OpenTypeFontParser\AbstractOpenType $fontParser,
-                                   $embeddingOptions)
+    public static function factory(AbstractFont     $font,
+                                   AbstractOpenType $fontParser,
+                                                    $embeddingOptions)
     {
         /* The font descriptor object contains the rest of the font metrics and
          * the information about the embedded font program (if applicible).
          */
-        $fontDescriptor = new InternalType\DictionaryObject();
+        $fontDescriptor = new DictionaryObject();
 
-        $fontDescriptor->Type     = new InternalType\NameObject('FontDescriptor');
+        $fontDescriptor->Type = new InternalType\NameObject('FontDescriptor');
         $fontDescriptor->FontName = new InternalType\NameObject($font->getResource()->BaseFont->value);
 
         /* The font flags value is a bitfield that describes the stylistic
@@ -81,7 +84,7 @@ class FontDescriptor
         if ($fontParser->isSerifFont) {    // bit 2: Serif
             $flags |= 1 << 1;
         }
-        if (! $fontParser->isAdobeLatinSubset) {    // bit 3: Symbolic
+        if (!$fontParser->isAdobeLatinSubset) {    // bit 3: Symbolic
             $flags |= 1 << 2;
         }
         if ($fontParser->isScriptFont) {    // bit 4: Script
@@ -97,23 +100,23 @@ class FontDescriptor
         $fontDescriptor->Flags = new InternalType\NumericObject($flags);
 
         $fontBBox = array(new InternalType\NumericObject($font->toEmSpace($fontParser->xMin)),
-                          new InternalType\NumericObject($font->toEmSpace($fontParser->yMin)),
-                          new InternalType\NumericObject($font->toEmSpace($fontParser->xMax)),
-                          new InternalType\NumericObject($font->toEmSpace($fontParser->yMax)));
-        $fontDescriptor->FontBBox     = new InternalType\ArrayObject($fontBBox);
+            new InternalType\NumericObject($font->toEmSpace($fontParser->yMin)),
+            new InternalType\NumericObject($font->toEmSpace($fontParser->xMax)),
+            new InternalType\NumericObject($font->toEmSpace($fontParser->yMax)));
+        $fontDescriptor->FontBBox = new InternalType\ArrayObject($fontBBox);
 
-        $fontDescriptor->ItalicAngle  = new InternalType\NumericObject($fontParser->italicAngle);
+        $fontDescriptor->ItalicAngle = new InternalType\NumericObject($fontParser->italicAngle);
 
-        $fontDescriptor->Ascent       = new InternalType\NumericObject($font->toEmSpace($fontParser->ascent));
-        $fontDescriptor->Descent      = new InternalType\NumericObject($font->toEmSpace($fontParser->descent));
+        $fontDescriptor->Ascent = new InternalType\NumericObject($font->toEmSpace($fontParser->ascent));
+        $fontDescriptor->Descent = new InternalType\NumericObject($font->toEmSpace($fontParser->descent));
 
-        $fontDescriptor->CapHeight    = new InternalType\NumericObject($fontParser->capitalHeight);
+        $fontDescriptor->CapHeight = new InternalType\NumericObject($fontParser->capitalHeight);
         /**
          * The vertical stem width is not yet extracted from the OpenType font
          * file. For now, record zero which is interpreted as 'unknown'.
          * @todo Calculate value for StemV.
          */
-        $fontDescriptor->StemV        = new InternalType\NumericObject(0);
+        $fontDescriptor->StemV = new InternalType\NumericObject(0);
 
         $fontDescriptor->MissingWidth = new InternalType\NumericObject($fontParser->glyphWidths[0]);
 
@@ -141,14 +144,14 @@ class FontDescriptor
              * reports of "your PDF doesn't have the right fonts," throw an
              * exception if the font cannot be embedded.
              */
-            if (! $fontParser->isEmbeddable) {
+            if (!$fontParser->isEmbeddable) {
                 /* This exception may be suppressed if the developer decides that
                  * it's not a big deal that the font program can't be embedded.
                  */
                 if (!($embeddingOptions & Pdf\Font::EMBED_SUPPRESS_EMBED_EXCEPTION)) {
                     $message = 'This font cannot be embedded in the PDF document. If you would like to use '
-                             . 'it anyway, you must pass \ZendPdf\Font::EMBED_SUPPRESS_EMBED_EXCEPTION '
-                             . 'in the $options parameter of the font constructor.';
+                        . 'it anyway, you must pass \ZendPdf\Font::EMBED_SUPPRESS_EMBED_EXCEPTION '
+                        . 'in the $options parameter of the font constructor.';
                     throw new Exception\DomainException($message);
                 }
 

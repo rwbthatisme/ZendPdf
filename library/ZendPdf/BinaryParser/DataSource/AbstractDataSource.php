@@ -10,8 +10,8 @@
 
 namespace ZendPdf\BinaryParser\DataSource;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * Abstract helper class for {@link \ZendPdf\BinaryParser\AbstractBinaryParser}
@@ -57,7 +57,6 @@ abstract class AbstractDataSource
     protected $_offset = 0;
 
 
-
     /**** Public Interface ****/
 
 
@@ -75,7 +74,7 @@ abstract class AbstractDataSource
      *
      * @param integer $byteCount Number of bytes to read.
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     abstract public function readBytes($byteCount);
 
@@ -135,6 +134,22 @@ abstract class AbstractDataSource
     /* Primitive Methods */
 
     /**
+     * Shifts the current read position within the data source by the specified
+     * number of bytes.
+     *
+     * You may move forward (positive numbers) or backward (negative numbers).
+     * Throws an exception you attempt to move before the beginning or beyond
+     * the end of the data source.
+     *
+     * @param integer $byteCount Number of bytes to skip.
+     * @throws ExceptionInterface
+     */
+    public function skipBytes($byteCount)
+    {
+        $this->moveToOffset($this->_offset + $byteCount);
+    }
+
+    /**
      * Moves the current read position to the specified byte offset.
      *
      * Throws an exception you attempt to move before the beginning or beyond
@@ -145,7 +160,7 @@ abstract class AbstractDataSource
      * parent method.
      *
      * @param integer $offset Destination byte offset.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function moveToOffset($offset)
     {
@@ -159,21 +174,5 @@ abstract class AbstractDataSource
             throw new Exception\OutOfBoundsException('Attempt to move beyond end of data source');
         }
         $this->_offset = $offset;
-    }
-
-    /**
-     * Shifts the current read position within the data source by the specified
-     * number of bytes.
-     *
-     * You may move forward (positive numbers) or backward (negative numbers).
-     * Throws an exception you attempt to move before the beginning or beyond
-     * the end of the data source.
-     *
-     * @param integer $byteCount Number of bytes to skip.
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    public function skipBytes($byteCount)
-    {
-        $this->moveToOffset($this->_offset + $byteCount);
     }
 }

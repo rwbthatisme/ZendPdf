@@ -11,6 +11,7 @@
 namespace ZendPdf\Color;
 
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\NumericObject;
 
 /**
  * RGB color implementation
@@ -24,7 +25,7 @@ class Rgb implements ColorInterface
      * Red level.
      * 0.0 (zero concentration) - 1.0 (maximum concentration)
      *
-     * @var \ZendPdf\InternalType\NumericObject
+     * @var NumericObject
      */
     private $_r;
 
@@ -32,7 +33,7 @@ class Rgb implements ColorInterface
      * Green level.
      * 0.0 (zero concentration) - 1.0 (maximum concentration)
      *
-     * @var \ZendPdf\InternalType\NumericObject
+     * @var NumericObject
      */
     private $_g;
 
@@ -40,7 +41,7 @@ class Rgb implements ColorInterface
      * Blue level.
      * 0.0 (zero concentration) - 1.0 (maximum concentration)
      *
-     * @var \ZendPdf\InternalType\NumericObject
+     * @var NumericObject
      */
     private $_b;
 
@@ -55,18 +56,30 @@ class Rgb implements ColorInterface
     public function __construct($r, $g, $b)
     {
         /** Clamp values to legal limits. */
-        if ($r < 0) { $r = 0; }
-        if ($r > 1) { $r = 1; }
+        if ($r < 0) {
+            $r = 0;
+        }
+        if ($r > 1) {
+            $r = 1;
+        }
 
-        if ($g < 0) { $g = 0; }
-        if ($g > 1) { $g = 1; }
+        if ($g < 0) {
+            $g = 0;
+        }
+        if ($g > 1) {
+            $g = 1;
+        }
 
-        if ($b < 0) { $b = 0; }
-        if ($b > 1) { $b = 1; }
+        if ($b < 0) {
+            $b = 0;
+        }
+        if ($b > 1) {
+            $b = 1;
+        }
 
-        $this->_r = new InternalType\NumericObject($r);
-        $this->_g = new InternalType\NumericObject($g);
-        $this->_b = new InternalType\NumericObject($b);
+        $this->_r = new NumericObject($r);
+        $this->_g = new NumericObject($g);
+        $this->_b = new NumericObject($b);
     }
 
     /**
@@ -80,8 +93,8 @@ class Rgb implements ColorInterface
     public function instructions($stroking)
     {
         return $this->_r->toString() . ' '
-             . $this->_g->toString() . ' '
-             . $this->_b->toString() .     ($stroking? " RG\n" : " rg\n");
+            . $this->_g->toString() . ' '
+            . $this->_b->toString() . ($stroking ? " RG\n" : " rg\n");
     }
 
     /**

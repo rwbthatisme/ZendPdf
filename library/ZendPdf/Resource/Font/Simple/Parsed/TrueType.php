@@ -12,6 +12,7 @@ namespace ZendPdf\Resource\Font\Simple\Parsed;
 
 use ZendPdf as Pdf;
 use ZendPdf\BinaryParser\Font\OpenType as OpenTypeFontParser;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
 use ZendPdf\Resource\Font as FontResource;
 
@@ -29,10 +30,10 @@ class TrueType extends AbstractParsed
     /**
      * Object constructor
      *
-     * @param \ZendPdf\BinaryParser\Font\OpenType\TrueType $fontParser Font parser
+     * @param OpenTypeFontParser\TrueType $fontParser Font parser
      *   object containing parsed TrueType file.
      * @param integer $embeddingOptions Options for font embedding.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct(OpenTypeFontParser\TrueType $fontParser, $embeddingOptions)
     {
@@ -40,7 +41,7 @@ class TrueType extends AbstractParsed
 
         $this->_fontType = Pdf\Font::TYPE_TRUETYPE;
 
-        $this->_resource->Subtype  = new InternalType\NameObject('TrueType');
+        $this->_resource->Subtype = new InternalType\NameObject('TrueType');
 
         $fontDescriptor = FontResource\FontDescriptor::factory($this, $fontParser, $embeddingOptions);
         $this->_resource->FontDescriptor = $this->_objectFactory->newObject($fontDescriptor);

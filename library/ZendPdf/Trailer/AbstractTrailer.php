@@ -10,9 +10,9 @@
 
 namespace ZendPdf\Trailer;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
-use ZendPdf\InternalType;
+use ZendPdf\Exception\ExceptionInterface;
+use ZendPdf\InternalType\DictionaryObject;
 
 /**
  * PDF file trailer
@@ -27,36 +27,35 @@ abstract class AbstractTrailer
     /**
      * Trailer dictionary.
      *
-     * @var \ZendPdf\InternalType\DictionaryObject
+     * @var DictionaryObject
      */
     private $_dict;
+
+    /**
+     * Object constructor
+     *
+     * @param DictionaryObject $dict
+     */
+    public function __construct(DictionaryObject $dict)
+    {
+        $this->_dict = $dict;
+
+        foreach ($this->_dict->getKeys() as $dictKey) {
+            $this->_checkDictKey($dictKey);
+        }
+    }
 
     /**
      * Check if key is correct
      *
      * @param string $key
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     private function _checkDictKey($key)
     {
-        if ( !in_array($key, self::$_allowedKeys) ) {
+        if (!in_array($key, self::$_allowedKeys)) {
             /** @todo Make warning (log entry) instead of an exception */
             throw new Exception\CorruptedPdfException("Unknown trailer dictionary key: '$key'.");
-        }
-    }
-
-
-    /**
-     * Object constructor
-     *
-     * @param \ZendPdf\InternalType\DictionaryObject $dict
-     */
-    public function __construct(InternalType\DictionaryObject $dict)
-    {
-        $this->_dict   = $dict;
-
-        foreach ($this->_dict->getKeys() as $dictKey) {
-            $this->_checkDictKey($dictKey);
         }
     }
 
@@ -75,7 +74,7 @@ abstract class AbstractTrailer
      * Set handler
      *
      * @param string $property
-     * @param  mixed $value
+     * @param mixed $value
      */
     public function __set($property, $value)
     {

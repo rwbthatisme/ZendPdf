@@ -12,9 +12,15 @@ namespace ZendPdf\Action;
 
 use Countable;
 use RecursiveIterator;
+use SplObjectStorage;
 use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\AbstractTypeObject;
+use ZendPdf\InternalType\DictionaryObject;
+use ZendPdf\InternalType\IndirectObject;
+use ZendPdf\InternalType\IndirectObjectReference;
 use ZendPdf\ObjectFactory;
 
 /**
@@ -28,15 +34,19 @@ abstract class AbstractAction extends Pdf\InternalStructure\NavigationTarget imp
     RecursiveIterator
 {
     /**
+     * A list of next actions in actions tree (used for actions chaining)
+     *
+     * @var array  Array of \ZendPdf\Action\AbstractAction objects
+     */
+    public $next = array();
+    /**
      * Action dictionary
      *
-     * @var   \ZendPdf\InternalType\DictionaryObject
+     * @var   DictionaryObject
      *      | \ZendPdf\InternalType\IndirectObject
      *      | \ZendPdf\InternalType\IndirectObjectReference
      */
     protected $_actionDictionary;
-
-
     /**
      * An original list of chained actions
      *
@@ -45,30 +55,23 @@ abstract class AbstractAction extends Pdf\InternalStructure\NavigationTarget imp
     protected $_originalNextList;
 
     /**
-     * A list of next actions in actions tree (used for actions chaining)
-     *
-     * @var array  Array of \ZendPdf\Action\AbstractAction objects
-     */
-    public $next = array();
-
-    /**
      * Object constructor
      *
-     * @param \ZendPdf\InternalType\DictionaryObject $dictionary
-     * @param SplObjectStorage      $processedActions  list of already processed action dictionaries,
+     * @param DictionaryObject $dictionary
+     * @param SplObjectStorage $processedActions list of already processed action dictionaries,
      *                                                 used to avoid cyclic references
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
-    public function __construct(InternalType\AbstractTypeObject $dictionary, \SplObjectStorage $processedActions)
+    public function __construct(AbstractTypeObject $dictionary, SplObjectStorage $processedActions)
     {
-        if ($dictionary->getType() != InternalType\AbstractTypeObject::TYPE_DICTIONARY) {
+        if ($dictionary->getType() != AbstractTypeObject::TYPE_DICTIONARY) {
             throw new Exception\CorruptedPdfException('$dictionary mast be a direct or an indirect dictionary object.');
         }
 
         $this->_actionDictionary = $dictionary;
 
         if ($dictionary->Next !== null) {
-            if ($dictionary->Next instanceof InternalType\DictionaryObject) {
+            if ($dictionary->Next instanceof DictionaryObject) {
                 // Check if dictionary object is not already processed
                 if (!$processedActions->contains($dictionary->Next)) {
                     $processedActions->attach($dictionary->Next);
@@ -93,22 +96,22 @@ abstract class AbstractAction extends Pdf\InternalStructure\NavigationTarget imp
     /**
      * Load PDF action object using specified dictionary
      *
+     * @param AbstractTypeObject $dictionary (It's actually Dictionary or Dictionary Object or Reference to a Dictionary Object)
+     * @param SplObjectStorage $processedActions list of already processed action dictionaries, used to avoid cyclic references
+     * @return AbstractAction
+     * @throws ExceptionInterface
      * @internal
-     * @param \ZendPdf\InternalType\AbstractTypeObject $dictionary (It's actually Dictionary or Dictionary Object or Reference to a Dictionary Object)
-     * @param SplObjectStorage $processedActions  list of already processed action dictionaries, used to avoid cyclic references
-     * @return \ZendPdf\Action\AbstractAction
-     * @throws \ZendPdf\Exception\ExceptionInterface
      */
-    public static function load(InternalType\AbstractTypeObject $dictionary, \SplObjectStorage $processedActions = null)
+    public static function load(AbstractTypeObject $dictionary, SplObjectStorage $processedActions = null)
     {
         if ($processedActions === null) {
-            $processedActions = new \SplObjectStorage();
+            $processedActions = new SplObjectStorage();
         }
 
-        if ($dictionary->getType() != InternalType\AbstractTypeObject::TYPE_DICTIONARY) {
+        if ($dictionary->getType() != AbstractTypeObject::TYPE_DICTIONARY) {
             throw new Exception\CorruptedPdfException('$dictionary mast be a direct or an indirect dictionary object.');
         }
-        if (isset($dictionary->Type)  &&  $dictionary->Type->value != 'Action') {
+        if (isset($dictionary->Type) && $dictionary->Type->value != 'Action') {
             throw new Exception\CorruptedPdfException('Action dictionary Type entry must be set to \'Action\'.');
         }
 
@@ -179,8 +182,8 @@ abstract class AbstractAction extends Pdf\InternalStructure\NavigationTarget imp
     /**
      * Get resource
      *
+     * @return AbstractTypeObject
      * @internal
-     * @return \ZendPdf\InternalType\AbstractTypeObject
      */
     public function getResource()
     {
@@ -192,16 +195,16 @@ abstract class AbstractAction extends Pdf\InternalStructure\NavigationTarget imp
      *
      * Returns dictionary indirect object or reference
      *
-     * @internal
-     * @param \ZendPdf\ObjectFactory $factory    Object factory for newly created indirect objects
-     * @param SplObjectStorage $processedActions  list of already processed actions
+     * @param ObjectFactory $factory Object factory for newly created indirect objects
+     * @param SplObjectStorage $processedActions list of already processed actions
      *                                            (used to prevent infinity loop caused by cyclic references)
-     * @return \ZendPdf\InternalType\IndirectObject|\ZendPdf\InternalType\IndirectObjectReference
+     * @return IndirectObject|IndirectObjectReference
+     * @internal
      */
-    public function dumpAction(ObjectFactory $factory, \SplObjectStorage $processedActions = null)
+    public function dumpAction(ObjectFactory $factory, SplObjectStorage $processedActions = null)
     {
         if ($processedActions === null) {
-            $processedActions = new \SplObjectStorage();
+            $processedActions = new SplObjectStorage();
         }
         if ($processedActions->contains($this)) {
             throw new Exception\CorruptedPdfException('Action chain cyclyc reference is detected.');
@@ -212,7 +215,7 @@ abstract class AbstractAction extends Pdf\InternalStructure\NavigationTarget imp
         if (count($this->_originalNextList) != count($this->next)) {
             // If original and current children arrays have different size then children list was updated
             $childListUpdated = true;
-        } elseif ( !(array_keys($this->_originalNextList) === array_keys($this->next)) ) {
+        } elseif (!(array_keys($this->_originalNextList) === array_keys($this->next))) {
             // If original and current children arrays have different keys (with a glance to an order) then children list was updated
             $childListUpdated = true;
         } else {
@@ -251,7 +254,7 @@ abstract class AbstractAction extends Pdf\InternalStructure\NavigationTarget imp
             }
         }
 
-        if ($this->_actionDictionary instanceof InternalType\DictionaryObject) {
+        if ($this->_actionDictionary instanceof DictionaryObject) {
             // It's a newly created action. Register it within object factory and return indirect object
             return $factory->newObject($this->_actionDictionary);
         } else {
@@ -268,7 +271,7 @@ abstract class AbstractAction extends Pdf\InternalStructure\NavigationTarget imp
     /**
      * Returns current child action.
      *
-     * @return \ZendPdf\Action\AbstractAction
+     * @return AbstractAction
      */
     public function current()
     {
@@ -314,7 +317,7 @@ abstract class AbstractAction extends Pdf\InternalStructure\NavigationTarget imp
     /**
      * Returns the child action.
      *
-     * @return \ZendPdf\Action\AbstractAction|null
+     * @return AbstractAction|null
      */
     public function getChildren()
     {

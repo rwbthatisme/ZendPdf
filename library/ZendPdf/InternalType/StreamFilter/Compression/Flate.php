@@ -10,8 +10,8 @@
 
 namespace ZendPdf\InternalType\StreamFilter\Compression;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * Flate stream filter
@@ -27,7 +27,7 @@ class Flate extends AbstractCompression
      * @param string $data
      * @param array $params
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public static function encode($data, $params = null)
     {
@@ -38,7 +38,7 @@ class Flate extends AbstractCompression
         }
 
         if (extension_loaded('zlib')) {
-            $trackErrors = ini_get( "track_errors");
+            $trackErrors = ini_get("track_errors");
             ini_set('track_errors', '1');
 
             if (($output = @gzcompress($data)) === false) {
@@ -63,14 +63,14 @@ class Flate extends AbstractCompression
      * @param string $data
      * @param array $params
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public static function decode($data, $params = null)
     {
         global $php_errormsg;
 
         if (extension_loaded('zlib')) {
-            $trackErrors = ini_get( "track_errors");
+            $trackErrors = ini_get("track_errors");
             ini_set('track_errors', '1');
 
             if (($output = @gzuncompress($data)) === false) {

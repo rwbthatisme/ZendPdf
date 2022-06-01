@@ -11,6 +11,7 @@
 namespace ZendPdf\InternalType\StreamFilter;
 
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * ASCII85 stream filter
@@ -26,7 +27,7 @@ class Ascii85 implements StreamFilterInterface
      * @param string $data
      * @param array $params
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public static function encode($data, $params = null)
     {
@@ -53,8 +54,8 @@ class Ascii85 implements StreamFilterInterface
 
             //encode into 5 bytes
             for ($j = 4; $j >= 0; $j--) {
-                $foo = (int) (($b / pow(85,$j)) + 33);
-                $b %= pow(85,$j);
+                $foo = (int)(($b / pow(85, $j)) + 33);
+                $b %= pow(85, $j);
                 $output .= chr($foo);
             }
         }
@@ -65,7 +66,7 @@ class Ascii85 implements StreamFilterInterface
             $chunk = substr($data, -$n);
 
             //0 pad the rest
-            for ($j = $n;$j < 4;$j++) {
+            for ($j = $n; $j < 4; $j++) {
                 $chunk .= "\0";
             }
 
@@ -74,8 +75,8 @@ class Ascii85 implements StreamFilterInterface
 
             //encode just $n + 1
             for ($j = 4; $j >= (4 - $n); $j--) {
-                $foo = (int) (($b / pow(85,$j)) + 33);
-                $b %= pow(85,$j);
+                $foo = (int)(($b / pow(85, $j)) + 33);
+                $b %= pow(85, $j);
                 $output .= chr($foo);
             }
         }
@@ -97,7 +98,7 @@ class Ascii85 implements StreamFilterInterface
      * @param string $data
      * @param array $params
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public static function decode($data, $params = null)
     {
@@ -126,7 +127,7 @@ class Ascii85 implements StreamFilterInterface
 
             $c = substr($data, $i, 5);
 
-            if(strlen($c) < 5) {
+            if (strlen($c) < 5) {
                 //partial chunk
                 break;
             }

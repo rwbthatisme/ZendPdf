@@ -10,6 +10,10 @@
 
 namespace ZendPdf;
 
+use ZendPdf\Color\ColorInterface;
+use ZendPdf\InternalType\NumericObject;
+use ZendPdf\Resource\Font\AbstractFont;
+
 /**
  * Style object.
  * Style object doesn't directly correspond to any PDF file object.
@@ -24,7 +28,7 @@ class Style
      * Fill color.
      * Used to fill geometric shapes or text.
      *
-     * @var \ZendPdf\Color\ColorInterface|null
+     * @var ColorInterface|null
      */
     private $_fillColor = null;
 
@@ -32,7 +36,7 @@ class Style
      * Line color.
      * Current color, used for lines and font outlines.
      *
-     * @var \ZendPdf\Color\ColorInterface|null
+     * @var ColorInterface|null
      */
 
     private $_color;
@@ -40,7 +44,7 @@ class Style
     /**
      * Line width.
      *
-     * @var \ZendPdf\InternalType\NumericObject
+     * @var NumericObject
      */
     private $_lineWidth;
 
@@ -63,7 +67,7 @@ class Style
     /**
      * Current font
      *
-     * @var \ZendPdf\Resource\Font\AbstractFont
+     * @var AbstractFont
      */
     private $_font;
 
@@ -75,40 +79,28 @@ class Style
     private $_fontSize;
 
 
-
     /**
      * Create style.
      *
-     * @param \ZendPdf\Style $anotherStyle
+     * @param Style $anotherStyle
      */
     public function __construct($anotherStyle = null)
     {
         if ($anotherStyle !== null) {
-            $this->_fillColor          = $anotherStyle->_fillColor;
-            $this->_color              = $anotherStyle->_color;
-            $this->_lineWidth          = $anotherStyle->_lineWidth;
+            $this->_fillColor = $anotherStyle->_fillColor;
+            $this->_color = $anotherStyle->_color;
+            $this->_lineWidth = $anotherStyle->_lineWidth;
             $this->_lineDashingPattern = $anotherStyle->_lineDashingPattern;
-            $this->_lineDashingPhase   = $anotherStyle->_lineDashingPhase;
-            $this->_font               = $anotherStyle->_font;
-            $this->_fontSize           = $anotherStyle->_fontSize;
+            $this->_lineDashingPhase = $anotherStyle->_lineDashingPhase;
+            $this->_font = $anotherStyle->_font;
+            $this->_fontSize = $anotherStyle->_fontSize;
         }
-    }
-
-
-    /**
-     * Set fill color.
-     *
-     * @param \ZendPdf\Color\ColorInterface $color
-     */
-    public function setFillColor(Color\ColorInterface $color)
-    {
-        $this->_fillColor = $color;
     }
 
     /**
      * Set line color.
      *
-     * @param \ZendPdf\Color\ColorInterface $color
+     * @param ColorInterface $color
      */
     public function setLineColor(Color\ColorInterface $color)
     {
@@ -116,60 +108,9 @@ class Style
     }
 
     /**
-     * Set line width.
-     *
-     * @param float $width
-     */
-    public function setLineWidth($width)
-    {
-        $this->_lineWidth = new InternalType\NumericObject($width);
-    }
-
-
-    /**
-     * Set line dashing pattern
-     *
-     * @param array $pattern
-     * @param float $phase
-     */
-    public function setLineDashingPattern($pattern, $phase = 0)
-    {
-        if ($pattern === Page::LINE_DASHING_SOLID) {
-            $pattern = array();
-            $phase   = 0;
-        }
-
-        $this->_lineDashingPattern = $pattern;
-        $this->_lineDashingPhase   = new InternalType\NumericObject($phase);
-    }
-
-
-    /**
-     * Set current font.
-     *
-     * @param \ZendPdf\Resource\Font\AbstractFont $font
-     * @param float $fontSize
-     */
-    public function setFont(Resource\Font\AbstractFont $font, $fontSize)
-    {
-        $this->_font = $font;
-        $this->_fontSize = $fontSize;
-    }
-
-    /**
-     * Modify current font size
-     *
-     * @param float $fontSize
-     */
-    public function setFontSize($fontSize)
-    {
-        $this->_fontSize = $fontSize;
-    }
-
-    /**
      * Get fill color.
      *
-     * @return \ZendPdf\Color\ColorInterface|null
+     * @return ColorInterface|null
      */
     public function getFillColor()
     {
@@ -177,9 +118,19 @@ class Style
     }
 
     /**
+     * Set fill color.
+     *
+     * @param ColorInterface $color
+     */
+    public function setFillColor(Color\ColorInterface $color)
+    {
+        $this->_fillColor = $color;
+    }
+
+    /**
      * Get line color.
      *
-     * @return \ZendPdf\Color\ColorInterface|null
+     * @return ColorInterface|null
      */
     public function getLineColor()
     {
@@ -197,6 +148,16 @@ class Style
     }
 
     /**
+     * Set line width.
+     *
+     * @param float $width
+     */
+    public function setLineWidth($width)
+    {
+        $this->_lineWidth = new InternalType\NumericObject($width);
+    }
+
+    /**
      * Get line dashing pattern
      *
      * @return array
@@ -206,15 +167,43 @@ class Style
         return $this->_lineDashingPattern;
     }
 
+    /**
+     * Set line dashing pattern
+     *
+     * @param array $pattern
+     * @param float $phase
+     */
+    public function setLineDashingPattern($pattern, $phase = 0)
+    {
+        if ($pattern === Page::LINE_DASHING_SOLID) {
+            $pattern = [];
+            $phase = 0;
+        }
+
+        $this->_lineDashingPattern = $pattern;
+        $this->_lineDashingPhase = new InternalType\NumericObject($phase);
+    }
 
     /**
      * Get current font.
      *
-     * @return \ZendPdf\Resource\Font\AbstractFont $font
+     * @return AbstractFont $font
      */
     public function getFont()
     {
         return $this->_font;
+    }
+
+    /**
+     * Set current font.
+     *
+     * @param AbstractFont $font
+     * @param float $fontSize
+     */
+    public function setFont(Resource\Font\AbstractFont $font, $fontSize)
+    {
+        $this->_font = $font;
+        $this->_fontSize = $fontSize;
     }
 
     /**
@@ -225,6 +214,16 @@ class Style
     public function getFontSize()
     {
         return $this->_fontSize;
+    }
+
+    /**
+     * Modify current font size
+     *
+     * @param float $fontSize
+     */
+    public function setFontSize($fontSize)
+    {
+        $this->_fontSize = $fontSize;
     }
 
     /**
@@ -268,7 +267,7 @@ class Style
             }
 
             $instructions .= $dashPattern->toString() . ' '
-                           . $this->_lineDashingPhase->toString() . " d\n";
+                . $this->_lineDashingPhase->toString() . " d\n";
         }
 
         return $instructions;

@@ -12,6 +12,8 @@ namespace ZendPdf\InternalType;
 
 use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
+use ZendPdf\ObjectFactory;
 
 /**
  * PDF file 'dictionary' element implementation
@@ -34,8 +36,8 @@ class DictionaryObject extends AbstractTypeObject
     /**
      * Object constructor
      *
-     * @param array $val   - array of \ZendPdf\InternalType\AbstractTypeObject objects
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @param array $val - array of \ZendPdf\InternalType\AbstractTypeObject objects
+     * @throws ExceptionInterface
      */
     public function __construct($val = null)
     {
@@ -60,9 +62,9 @@ class DictionaryObject extends AbstractTypeObject
     /**
      * Add element to an array
      *
-     * @name \ZendPdf\InternalType\NameObject $name
-     * @param \ZendPdf\InternalType\AbstractTypeObject $val   - \ZendPdf\InternalType\AbstractTypeObject object
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @name NameObject $name
+     * @param AbstractTypeObject $val - \ZendPdf\InternalType\AbstractTypeObject object
+     * @throws ExceptionInterface
      */
     public function add(NameObject $name, AbstractTypeObject $val)
     {
@@ -84,12 +86,12 @@ class DictionaryObject extends AbstractTypeObject
      * Get handler
      *
      * @param string $property
-     * @return \ZendPdf\InternalType\AbstractTypeObject | null
+     * @return AbstractTypeObject | null
      */
     public function __get($item)
     {
         $element = isset($this->_items[$item]) ? $this->_items[$item]
-                                               : null;
+            : null;
 
         return $element;
     }
@@ -98,7 +100,7 @@ class DictionaryObject extends AbstractTypeObject
      * Set handler
      *
      * @param string $property
-     * @param  mixed $value
+     * @param mixed $value
      */
     public function __set($item, $value)
     {
@@ -122,10 +124,10 @@ class DictionaryObject extends AbstractTypeObject
     /**
      * Return object as string
      *
-     * @param \ZendPdf\ObjectFactory $factory
+     * @param ObjectFactory $factory
      * @return string
      */
-    public function toString(Pdf\ObjectFactory $factory = null)
+    public function toString(ObjectFactory $factory = null)
     {
         $outStr = '<<';
         $lastNL = 0;
@@ -135,7 +137,7 @@ class DictionaryObject extends AbstractTypeObject
                 throw new Exception\RuntimeException('Wrong data');
             }
 
-            if (strlen($outStr) - $lastNL > 128)  {
+            if (strlen($outStr) - $lastNL > 128) {
                 $outStr .= "\n";
                 $lastNL = strlen($outStr);
             }
@@ -151,13 +153,13 @@ class DictionaryObject extends AbstractTypeObject
     /**
      * Detach PDF object from the factory (if applicable), clone it and attach to new factory.
      *
-     * @param \ZendPdf\ObjectFactory $factory  The factory to attach
+     * @param ObjectFactory $factory The factory to attach
      * @param array &$processed List of already processed indirect objects, used to avoid objects duplication
-     * @param integer $mode  Cloning mode (defines filter for objects cloning)
-     * @returns \ZendPdf\InternalType\AbstractTypeObject
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @param integer $mode Cloning mode (defines filter for objects cloning)
+     * @returns AbstractTypeObject
+     * @throws ExceptionInterface
      */
-    public function makeClone(Pdf\ObjectFactory $factory, array &$processed, $mode)
+    public function makeClone(ObjectFactory $factory, array &$processed, $mode)
     {
         if (isset($this->_items['Type'])) {
             if ($this->_items['Type']->value == 'Pages') {
@@ -166,7 +168,7 @@ class DictionaryObject extends AbstractTypeObject
                 return new NullObject();
             }
 
-            if ($this->_items['Type']->value == 'Page'  &&
+            if ($this->_items['Type']->value == 'Page' &&
                 $mode == AbstractTypeObject::CLONE_MODE_SKIP_PAGES
             ) {
                 // It's a page node, skip it
@@ -185,7 +187,7 @@ class DictionaryObject extends AbstractTypeObject
     /**
      * Set top level parent indirect object.
      *
-     * @param \ZendPdf\InternalType\IndirectObject $parent
+     * @param IndirectObject $parent
      */
     public function setParentObject(IndirectObject $parent)
     {

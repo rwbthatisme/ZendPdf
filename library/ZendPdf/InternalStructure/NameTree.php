@@ -13,8 +13,8 @@ namespace ZendPdf\InternalStructure;
 use ArrayAccess;
 use Countable;
 use Iterator;
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
 
 /**
@@ -39,7 +39,7 @@ class NameTree implements ArrayAccess, Countable, Iterator
      * Object constructor
      *
      * @param $rootDictionary root of name dictionary
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct(InternalType\AbstractTypeObject $rootDictionary)
     {
@@ -48,7 +48,7 @@ class NameTree implements ArrayAccess, Countable, Iterator
         }
 
         $intermediateNodes = array();
-        $leafNodes         = array();
+        $leafNodes = array();
         if ($rootDictionary->Kids !== null) {
             $intermediateNodes[] = $rootDictionary;
         } else {
@@ -70,9 +70,9 @@ class NameTree implements ArrayAccess, Countable, Iterator
         }
 
         foreach ($leafNodes as $leafNode) {
-            $destinationsCount = count($leafNode->Names->items)/2;
+            $destinationsCount = count($leafNode->Names->items) / 2;
             for ($count = 0; $count < $destinationsCount; $count++) {
-                $this->_items[$leafNode->Names->items[$count*2]->value] = $leafNode->Names->items[$count*2 + 1];
+                $this->_items[$leafNode->Names->items[$count * 2]->value] = $leafNode->Names->items[$count * 2 + 1];
             }
         }
     }
@@ -97,7 +97,7 @@ class NameTree implements ArrayAccess, Countable, Iterator
 
     public function valid()
     {
-        return current($this->_items)!==false;
+        return current($this->_items) !== false;
     }
 
 
@@ -122,7 +122,7 @@ class NameTree implements ArrayAccess, Countable, Iterator
     public function offsetSet($offset, $value)
     {
         if ($offset === null) {
-            $this->_items[]        = $value;
+            $this->_items[] = $value;
         } else {
             $this->_items[$offset] = $value;
         }

@@ -10,8 +10,8 @@
 
 namespace ZendPdf\Cmap;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * Implements the "segment mapping to delta values" character map (type 4).
@@ -85,11 +85,100 @@ class SegmentToDelta extends AbstractCmap
     protected $_glyphIndexArray = array();
 
 
-
     /**** Public Interface ****/
 
 
     /* Concrete Class Implementation */
+
+    /**
+     * Object constructor
+     *
+     * Parses the raw binary table data. Throws an exception if the table is
+     * malformed.
+     *
+     * @param string $cmapData Raw binary cmap table data.
+     * @throws ExceptionInterface
+     */
+    public function __construct($cmapData)
+    {
+        /* Sanity check: The table should be at least 23 bytes in size.
+         */
+        $actualLength = strlen($cmapData);
+        if ($actualLength < 23) {
+            throw new Exception\CorruptedFontException('Insufficient table data');
+        }
+
+        /* Sanity check: Make sure this is right data for this table type.
+         */
+        $type = $this->_extractUInt2($cmapData, 0);
+        if ($type != AbstractCmap::TYPE_SEGMENT_TO_DELTA) {
+            throw new Exception\CorruptedFontException('Wrong cmap table type');
+        }
+
+        $length = $this->_extractUInt2($cmapData, 2);
+        if ($length != $actualLength) {
+            throw new Exception\CorruptedFontException("Table length ($length) does not match actual length ($actualLength)");
+        }
+
+        /* Mapping tables should be language-independent. The font may not work
+         * as expected if they are not. Unfortunately, many font files in the
+         * wild incorrectly record a language ID in this field, so we can't
+         * call this a failure.
+         */
+        $language = $this->_extractUInt2($cmapData, 4);
+        if ($language != 0) {
+            // Record a warning here somehow?
+        }
+
+        /* These two values are stored premultiplied by two which is convienent
+         * when using the binary data directly, but we're parsing it out to
+         * native PHP data types, so divide by two.
+         */
+        $this->_segmentCount = $this->_extractUInt2($cmapData, 6) >> 1;
+        $this->_searchRange = $this->_extractUInt2($cmapData, 8) >> 1;
+
+        $this->_searchIterations = $this->_extractUInt2($cmapData, 10) + 1;
+
+        $offset = 14;
+        for ($i = 1; $i <= $this->_segmentCount; $i++, $offset += 2) {
+            $this->_segmentTableEndCodes[$i] = $this->_extractUInt2($cmapData, $offset);
+        }
+
+        $this->_searchRangeEndCode = $this->_segmentTableEndCodes[$this->_searchRange];
+
+        $offset += 2;    // reserved bytes
+
+        for ($i = 1; $i <= $this->_segmentCount; $i++, $offset += 2) {
+            $this->_segmentTableStartCodes[$i] = $this->_extractUInt2($cmapData, $offset);
+        }
+
+        for ($i = 1; $i <= $this->_segmentCount; $i++, $offset += 2) {
+            $this->_segmentTableIdDeltas[$i] = $this->_extractInt2($cmapData, $offset);    // signed
+        }
+
+        /* The range offset helps determine the index into the glyph index array.
+         * Like the segment count and search range above, it's stored as a byte
+         * multiple in the font, so divide by two as we extract the values.
+         */
+        for ($i = 1; $i <= $this->_segmentCount; $i++, $offset += 2) {
+            $this->_segmentTableIdRangeOffsets[$i] = $this->_extractUInt2($cmapData, $offset) >> 1;
+        }
+
+        /* The size of the glyph index array varies by font and depends on the
+         * extent of the usage of range offsets versus deltas. Some fonts may
+         * not have any entries in this array.
+         */
+        for (; $offset < $length; $offset += 2) {
+            $this->_glyphIndexArray[] = $this->_extractUInt2($cmapData, $offset);
+        }
+
+        /* Sanity check: After reading all of the data, we should be at the end
+         * of the table.
+         */
+        if ($offset != $length) {
+            throw new Exception\CorruptedFontException("Ending offset ($offset) does not match length ($length)");
+        }
+    }
 
     /**
      * Returns an array of glyph numbers corresponding to the Unicode characters.
@@ -169,8 +258,8 @@ class SegmentToDelta extends AbstractCmap
                  * must process it a bit differently.
                  */
                 $glyphIndex = ($characterCode - $this->_segmentTableStartCodes[$subtableIndex] +
-                               $this->_segmentTableIdRangeOffsets[$subtableIndex] - $this->_segmentCount +
-                               $subtableIndex - 1);
+                    $this->_segmentTableIdRangeOffsets[$subtableIndex] - $this->_segmentCount +
+                    $subtableIndex - 1);
                 $glyphNumbers[$key] = $this->_glyphIndexArray[$glyphIndex];
 
             }
@@ -224,8 +313,8 @@ class SegmentToDelta extends AbstractCmap
             $glyphNumber = ($characterCode + $this->_segmentTableIdDeltas[$subtableIndex]) % 65536;
         } else {
             $glyphIndex = ($characterCode - $this->_segmentTableStartCodes[$subtableIndex] +
-                           $this->_segmentTableIdRangeOffsets[$subtableIndex] - $this->_segmentCount +
-                           $subtableIndex - 1);
+                $this->_segmentTableIdRangeOffsets[$subtableIndex] - $this->_segmentCount +
+                $subtableIndex - 1);
             $glyphNumber = $this->_glyphIndexArray[$glyphIndex];
         }
         return $glyphNumber;
@@ -249,6 +338,9 @@ class SegmentToDelta extends AbstractCmap
     }
 
 
+
+    /* Object Lifecycle */
+
     /**
      * Returns an array containing the glyphs numbers that have entries in this character map.
      * Keys are Unicode character codes (integers)
@@ -257,8 +349,8 @@ class SegmentToDelta extends AbstractCmap
      * call, but this method do it in more effective way (prepare complete list instead of searching
      * glyph for each character code).
      *
-     * @internal
      * @return array Array representing <Unicode character code> => <glyph number> pairs.
+     * @internal
      */
     public function getCoveredCharactersGlyphs()
     {
@@ -268,13 +360,13 @@ class SegmentToDelta extends AbstractCmap
             if ($this->_segmentTableIdRangeOffsets[$segmentNum] == 0) {
                 $delta = $this->_segmentTableIdDeltas[$segmentNum];
 
-                for ($code =  $this->_segmentTableStartCodes[$segmentNum];
+                for ($code = $this->_segmentTableStartCodes[$segmentNum];
                      $code <= $this->_segmentTableEndCodes[$segmentNum];
                      $code++) {
                     $glyphNumbers[$code] = ($code + $delta) % 65536;
                 }
             } else {
-                $code       = $this->_segmentTableStartCodes[$segmentNum];
+                $code = $this->_segmentTableStartCodes[$segmentNum];
                 $glyphIndex = $this->_segmentTableIdRangeOffsets[$segmentNum] - ($this->_segmentCount - $segmentNum) - 1;
 
                 while ($code <= $this->_segmentTableEndCodes[$segmentNum]) {
@@ -287,99 +379,5 @@ class SegmentToDelta extends AbstractCmap
         }
 
         return $glyphNumbers;
-    }
-
-
-
-    /* Object Lifecycle */
-
-    /**
-     * Object constructor
-     *
-     * Parses the raw binary table data. Throws an exception if the table is
-     * malformed.
-     *
-     * @param string $cmapData Raw binary cmap table data.
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    public function __construct($cmapData)
-    {
-        /* Sanity check: The table should be at least 23 bytes in size.
-         */
-        $actualLength = strlen($cmapData);
-        if ($actualLength < 23) {
-            throw new Exception\CorruptedFontException('Insufficient table data');
-        }
-
-        /* Sanity check: Make sure this is right data for this table type.
-         */
-        $type = $this->_extractUInt2($cmapData, 0);
-        if ($type != AbstractCmap::TYPE_SEGMENT_TO_DELTA) {
-            throw new Exception\CorruptedFontException('Wrong cmap table type');
-        }
-
-        $length = $this->_extractUInt2($cmapData, 2);
-        if ($length != $actualLength) {
-            throw new Exception\CorruptedFontException("Table length ($length) does not match actual length ($actualLength)");
-        }
-
-        /* Mapping tables should be language-independent. The font may not work
-         * as expected if they are not. Unfortunately, many font files in the
-         * wild incorrectly record a language ID in this field, so we can't
-         * call this a failure.
-         */
-        $language = $this->_extractUInt2($cmapData, 4);
-        if ($language != 0) {
-            // Record a warning here somehow?
-        }
-
-        /* These two values are stored premultiplied by two which is convienent
-         * when using the binary data directly, but we're parsing it out to
-         * native PHP data types, so divide by two.
-         */
-        $this->_segmentCount = $this->_extractUInt2($cmapData, 6) >> 1;
-        $this->_searchRange  = $this->_extractUInt2($cmapData, 8) >> 1;
-
-        $this->_searchIterations = $this->_extractUInt2($cmapData, 10) + 1;
-
-        $offset = 14;
-        for ($i = 1; $i <= $this->_segmentCount; $i++, $offset += 2) {
-            $this->_segmentTableEndCodes[$i] = $this->_extractUInt2($cmapData, $offset);
-        }
-
-        $this->_searchRangeEndCode = $this->_segmentTableEndCodes[$this->_searchRange];
-
-        $offset += 2;    // reserved bytes
-
-        for ($i = 1; $i <= $this->_segmentCount; $i++, $offset += 2) {
-            $this->_segmentTableStartCodes[$i] = $this->_extractUInt2($cmapData, $offset);
-        }
-
-        for ($i = 1; $i <= $this->_segmentCount; $i++, $offset += 2) {
-            $this->_segmentTableIdDeltas[$i] = $this->_extractInt2($cmapData, $offset);    // signed
-        }
-
-        /* The range offset helps determine the index into the glyph index array.
-         * Like the segment count and search range above, it's stored as a byte
-         * multiple in the font, so divide by two as we extract the values.
-         */
-        for ($i = 1; $i <= $this->_segmentCount; $i++, $offset += 2) {
-            $this->_segmentTableIdRangeOffsets[$i] = $this->_extractUInt2($cmapData, $offset) >> 1;
-        }
-
-        /* The size of the glyph index array varies by font and depends on the
-         * extent of the usage of range offsets versus deltas. Some fonts may
-         * not have any entries in this array.
-         */
-        for (; $offset < $length; $offset += 2) {
-            $this->_glyphIndexArray[] = $this->_extractUInt2($cmapData, $offset);
-        }
-
-        /* Sanity check: After reading all of the data, we should be at the end
-         * of the table.
-         */
-        if ($offset != $length) {
-            throw new Exception\CorruptedFontException("Ending offset ($offset) does not match length ($length)");
-        }
     }
 }

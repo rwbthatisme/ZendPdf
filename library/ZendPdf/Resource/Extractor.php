@@ -11,7 +11,6 @@
 namespace ZendPdf\Resource;
 
 use ZendPdf as Pdf;
-use ZendPdf\InternalType;
 use ZendPdf\ObjectFactory;
 
 /**
@@ -33,7 +32,7 @@ class Extractor
     /**
      * PDF objects factory.
      *
-     * @var \ZendPdf\ObjectFactory
+     * @var ObjectFactory
      */
     protected $_factory;
 
@@ -49,7 +48,7 @@ class Extractor
      */
     public function __construct()
     {
-        $this->_factory   = Pdf\ObjectFactory::createFactory(1);
+        $this->_factory = ObjectFactory::createFactory(1);
         $this->_processed = array();
     }
 

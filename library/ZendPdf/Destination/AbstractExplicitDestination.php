@@ -10,9 +10,11 @@
 
 namespace ZendPdf\Destination;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\AbstractTypeObject;
+use ZendPdf\InternalType\ArrayObject;
 
 /**
  * Abstract PDF explicit destination representation class
@@ -25,7 +27,7 @@ abstract class AbstractExplicitDestination extends AbstractDestination
     /**
      * Destination description array
      *
-     * @var \ZendPdf\InternalType\ArrayObject
+     * @var ArrayObject
      */
     protected $_destinationArray;
 
@@ -39,12 +41,12 @@ abstract class AbstractExplicitDestination extends AbstractDestination
     /**
      * AbstractExplicitDestination destination object constructor
      *
-     * @param \ZendPdf\InternalType\AbstractTypeObject $destinationArray
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @param AbstractTypeObject $destinationArray
+     * @throws ExceptionInterface
      */
-    public function __construct(InternalType\AbstractTypeObject $destinationArray)
+    public function __construct(AbstractTypeObject $destinationArray)
     {
-        if ($destinationArray->getType() != InternalType\AbstractTypeObject::TYPE_ARRAY) {
+        if ($destinationArray->getType() != AbstractTypeObject::TYPE_ARRAY) {
             throw new Exception\CorruptedPdfException('Explicit destination resource Array must be a direct or an indirect array object.');
         }
 
@@ -65,11 +67,11 @@ abstract class AbstractExplicitDestination extends AbstractDestination
         }
 
         switch ($this->_destinationArray->items[0]->getType()) {
-            case InternalType\AbstractTypeObject::TYPE_NUMERIC:
+            case AbstractTypeObject::TYPE_NUMERIC:
                 $this->_isRemote = true;
                 break;
 
-            case InternalType\AbstractTypeObject::TYPE_DICTIONARY:
+            case AbstractTypeObject::TYPE_DICTIONARY:
                 $this->_isRemote = false;
                 break;
 
@@ -92,8 +94,8 @@ abstract class AbstractExplicitDestination extends AbstractDestination
     /**
      * Get resource
      *
+     * @return AbstractTypeObject
      * @internal
-     * @return \ZendPdf\InternalType\AbstractTypeObject
      */
     public function getResource()
     {

@@ -13,7 +13,9 @@ namespace ZendPdf\Annotation;
 use ZendPdf as Pdf;
 use ZendPdf\Destination;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalStructure;
+use ZendPdf\InternalStructure\NavigationTarget;
 use ZendPdf\InternalType;
 
 /**
@@ -31,7 +33,7 @@ class Link extends AbstractAnnotation
     /**
      * Annotation object constructor
      *
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct(InternalType\AbstractTypeObject $annotationDictionary)
     {
@@ -39,8 +41,8 @@ class Link extends AbstractAnnotation
             throw new Exception\CorruptedPdfException('Annotation dictionary resource has to be a dictionary.');
         }
 
-        if ($annotationDictionary->Subtype === null  ||
-            $annotationDictionary->Subtype->getType() != InternalType\AbstractTypeObject::TYPE_NAME  ||
+        if ($annotationDictionary->Subtype === null ||
+            $annotationDictionary->Subtype->getType() != InternalType\AbstractTypeObject::TYPE_NAME ||
             $annotationDictionary->Subtype->value != 'Link') {
             throw new Exception\CorruptedPdfException('Subtype => Link entry is requires');
         }
@@ -55,21 +57,21 @@ class Link extends AbstractAnnotation
      * @param float $y1
      * @param float $x2
      * @param float $y2
-     * @param \ZendPdf\InternalStructure\NavigationTarget|string $target
-     * @return \ZendPdf\Annotation\Link
+     * @param NavigationTarget|string $target
+     * @return Link
      */
     public static function create($x1, $y1, $x2, $y2, $target)
     {
         if (is_string($target)) {
             $destination = Destination\Named::create($target);
         }
-        if (!$target instanceof InternalStructure\NavigationTarget) {
+        if (!$target instanceof NavigationTarget) {
             throw new Exception\InvalidArgumentException('$target parameter must be a \ZendPdf\InternalStructure\NavigationTarget object or a string.');
         }
 
         $annotationDictionary = new InternalType\DictionaryObject();
 
-        $annotationDictionary->Type    = new InternalType\NameObject('Annot');
+        $annotationDictionary->Type = new InternalType\NameObject('Annot');
         $annotationDictionary->Subtype = new InternalType\NameObject('Link');
 
         $rectangle = new InternalType\ArrayObject();
@@ -91,15 +93,15 @@ class Link extends AbstractAnnotation
     /**
      * Set link annotation destination
      *
-     * @param \ZendPdf\InternalStructure\NavigationTarget|string $target
-     * @return \ZendPdf\Annotation\Link
+     * @param NavigationTarget|string $target
+     * @return Link
      */
     public function setDestination($target)
     {
         if (is_string($target)) {
             $destination = Destination\Named::create($target);
         }
-        if (!$target instanceof InternalStructure\NavigationTarget) {
+        if (!$target instanceof NavigationTarget) {
             throw new Exception\InvalidArgumentException('$target parameter must be a \ZendPdf\InternalStructure\NavigationTarget object or a string.');
         }
 
@@ -107,10 +109,10 @@ class Link extends AbstractAnnotation
         $this->_annotationDictionary->Dest = $destination->getResource();
         if ($target instanceof Destination\AbstractDestination) {
             $this->_annotationDictionary->Dest = $target->getResource();
-            $this->_annotationDictionary->A    = null;
+            $this->_annotationDictionary->A = null;
         } else {
             $this->_annotationDictionary->Dest = null;
-            $this->_annotationDictionary->A    = $target->getResource();
+            $this->_annotationDictionary->A = $target->getResource();
         }
 
         return $this;
@@ -119,12 +121,12 @@ class Link extends AbstractAnnotation
     /**
      * Get link annotation destination
      *
-     * @return \ZendPdf\InternalStructure\NavigationTarget|null
+     * @return NavigationTarget|null
      */
     public function getDestination()
     {
-        if ($this->_annotationDictionary->Dest === null  &&
-            $this->_annotationDictionary->A    === null) {
+        if ($this->_annotationDictionary->Dest === null &&
+            $this->_annotationDictionary->A === null) {
             return null;
         }
 

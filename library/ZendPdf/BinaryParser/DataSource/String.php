@@ -10,8 +10,8 @@
 
 namespace ZendPdf\BinaryParser\DataSource;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * Concrete subclass of {@link \ZendPdf\BinaryParser\DataSource\AbstractDataSource}
@@ -30,7 +30,6 @@ class String extends AbstractDataSource
      * @var string
      */
     protected $_string = '';
-
 
 
     /**** Public Interface ****/
@@ -73,7 +72,7 @@ class String extends AbstractDataSource
      *
      * @param integer $byteCount Number of bytes to read.
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function readBytes($byteCount)
     {

@@ -10,8 +10,8 @@
 
 namespace ZendPdf\InternalType\StreamFilter;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * AsciiHex stream filter
@@ -27,7 +27,7 @@ class AsciiHex implements StreamFilterInterface
      * @param string $data
      * @param array $params
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public static function encode($data, $params = null)
     {
@@ -40,19 +40,19 @@ class AsciiHex implements StreamFilterInterface
      * @param string $data
      * @param array $params
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public static function decode($data, $params = null)
     {
-        $output  = '';
+        $output = '';
         $oddCode = true;
         $commentMode = false;
 
-        for ($count = 0; $count < strlen($data)  &&  $data[$count] != '>'; $count++) {
+        for ($count = 0; $count < strlen($data) && $data[$count] != '>'; $count++) {
             $charCode = ord($data[$count]);
 
             if ($commentMode) {
-                if ($charCode == 0x0A  || $charCode == 0x0D ) {
+                if ($charCode == 0x0A || $charCode == 0x0D) {
                     $commentMode = false;
                 }
 
@@ -84,9 +84,11 @@ class AsciiHex implements StreamFilterInterface
                     if ($charCode >= 0x30 /*'0'*/ && $charCode <= 0x39 /*'9'*/) {
                         $code = $charCode - 0x30;
                     } elseif ($charCode >= 0x41 /*'A'*/ && $charCode <= 0x46 /*'F'*/) {
-                        $code = $charCode - 0x37/*0x41 - 0x0A*/;
+                        $code = $charCode - 0x37/*0x41 - 0x0A*/
+                        ;
                     } elseif ($charCode >= 0x61 /*'a'*/ && $charCode <= 0x66 /*'f'*/) {
-                        $code = $charCode - 0x57/*0x61 - 0x0A*/;
+                        $code = $charCode - 0x57/*0x61 - 0x0A*/
+                        ;
                     } else {
                         throw new Exception\CorruptedPdfException('Wrong character in a encoded stream');
                     }
@@ -99,7 +101,7 @@ class AsciiHex implements StreamFilterInterface
                         // Even pass.
                         // Add decoded character to the output
                         // ($hexCodeHigh is stored in previous pass)
-                        $output .= chr($hexCodeHigh*16 + $code);
+                        $output .= chr($hexCodeHigh * 16 + $code);
                     }
                     $oddCode = !$oddCode;
 
@@ -114,7 +116,7 @@ class AsciiHex implements StreamFilterInterface
 
         /* Last '0' character is omitted */
         if (!$oddCode) {
-            $output .= chr($hexCodeHigh*16);
+            $output .= chr($hexCodeHigh * 16);
         }
 
         return $output;

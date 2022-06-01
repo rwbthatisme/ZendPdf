@@ -10,9 +10,11 @@
 
 namespace ZendPdf\Action;
 
-use ZendPdf as Pdf;
+use SplObjectStorage;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\DictionaryObject;
 
 /**
  * PDF 'Resolve a uniform resource identifier' action
@@ -27,12 +29,12 @@ class Uri extends AbstractAction
     /**
      * Object constructor
      *
-     * @param \ZendPdf\InternalType\DictionaryObject $dictionary
-     * @param SplObjectStorage      $processedActions  list of already processed action dictionaries,
+     * @param DictionaryObject $dictionary
+     * @param SplObjectStorage $processedActions list of already processed action dictionaries,
      *                                                 used to avoid cyclic references
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
-    public function __construct(InternalType\AbstractTypeObject $dictionary, \SplObjectStorage $processedActions)
+    public function __construct(InternalType\AbstractTypeObject $dictionary, SplObjectStorage $processedActions)
     {
         parent::__construct($dictionary, $processedActions);
 
@@ -42,11 +44,34 @@ class Uri extends AbstractAction
     }
 
     /**
+     * Create new \ZendPdf\Action\Uri object using specified uri
+     *
+     * @param string $uri The URI to resolve, encoded in 7-bit ASCII
+     * @param boolean $isMap A flag specifying whether to track the mouse position when the URI is resolved
+     * @return Uri
+     */
+    public static function create($uri, $isMap = false)
+    {
+        self::_validateUri($uri);
+
+        $dictionary = new DictionaryObject();
+        $dictionary->Type = new InternalType\NameObject('Action');
+        $dictionary->S = new InternalType\NameObject('URI');
+        $dictionary->Next = null;
+        $dictionary->URI = new InternalType\StringObject($uri);
+        if ($isMap) {
+            $dictionary->IsMap = new InternalType\BooleanObject(true);
+        }
+
+        return new self($dictionary, new SplObjectStorage());
+    }
+
+    /**
      * Validate URI
      *
      * @param string $uri
      * @return true
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     protected static function _validateUri($uri)
     {
@@ -57,33 +82,10 @@ class Uri extends AbstractAction
     }
 
     /**
-     * Create new \ZendPdf\Action\Uri object using specified uri
-     *
-     * @param string  $uri    The URI to resolve, encoded in 7-bit ASCII
-     * @param boolean $isMap  A flag specifying whether to track the mouse position when the URI is resolved
-     * @return \ZendPdf\Action\Uri
-     */
-    public static function create($uri, $isMap = false)
-    {
-        self::_validateUri($uri);
-
-        $dictionary       = new InternalType\DictionaryObject();
-        $dictionary->Type = new InternalType\NameObject('Action');
-        $dictionary->S    = new InternalType\NameObject('URI');
-        $dictionary->Next = null;
-        $dictionary->URI  = new InternalType\StringObject($uri);
-        if ($isMap) {
-            $dictionary->IsMap = new InternalType\BooleanObject(true);
-        }
-
-        return new self($dictionary, new \SplObjectStorage());
-    }
-
-    /**
      * Set URI to resolve
      *
-     * @param string $uri   The uri to resolve, encoded in 7-bit ASCII.
-     * @return \ZendPdf\Action\Uri
+     * @param string $uri The uri to resolve, encoded in 7-bit ASCII.
+     * @return Uri
      */
     public function setUri($uri)
     {
@@ -113,8 +115,8 @@ class Uri extends AbstractAction
      * performed should be transformed from device space to user space and then offset
      * relative to the upper-left corner of the annotation rectangle.
      *
-     * @param boolean $isMap  A flag specifying whether to track the mouse position when the URI is resolved
-     * @return \ZendPdf\Action\Uri
+     * @param boolean $isMap A flag specifying whether to track the mouse position when the URI is resolved
+     * @return Uri
      */
     public function setIsMap($isMap)
     {
@@ -141,7 +143,7 @@ class Uri extends AbstractAction
      */
     public function getIsMap()
     {
-        return $this->_actionDictionary->IsMap !== null  &&
-               $this->_actionDictionary->IsMap->value;
+        return $this->_actionDictionary->IsMap !== null &&
+            $this->_actionDictionary->IsMap->value;
     }
 }

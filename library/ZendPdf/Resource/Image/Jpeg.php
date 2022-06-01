@@ -10,8 +10,8 @@
 
 namespace ZendPdf\Resource\Image;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
 
 /**
@@ -31,7 +31,7 @@ class Jpeg extends AbstractImage
      * Object constructor
      *
      * @param string $imageFileName
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct($imageFileName)
     {
@@ -40,13 +40,13 @@ class Jpeg extends AbstractImage
         }
 
         $gd_options = gd_info();
-        if ( (!isset($gd_options['JPG Support'])  || $gd_options['JPG Support']  != true)  &&
-             (!isset($gd_options['JPEG Support']) || $gd_options['JPEG Support'] != true)  ) {
+        if ((!isset($gd_options['JPG Support']) || $gd_options['JPG Support'] != true) &&
+            (!isset($gd_options['JPEG Support']) || $gd_options['JPEG Support'] != true)) {
             throw new Exception\RuntimeException('JPG support is not configured properly.');
         }
 
         if (!is_readable($imageFileName)) {
-            throw new Exception\IOException( "File '$imageFileName' is not readable." );
+            throw new Exception\IOException("File '$imageFileName' is not readable.");
         }
         if (($imageInfo = getimagesize($imageFileName)) === false) {
             throw new Exception\CorruptedImageException('Corrupted image.');
@@ -70,34 +70,34 @@ class Jpeg extends AbstractImage
         }
 
         $imageDictionary = $this->_resource->dictionary;
-        $imageDictionary->Width            = new InternalType\NumericObject($imageInfo[0]);
-        $imageDictionary->Height           = new InternalType\NumericObject($imageInfo[1]);
-        $imageDictionary->ColorSpace       = new InternalType\NameObject($colorSpace);
+        $imageDictionary->Width = new InternalType\NumericObject($imageInfo[0]);
+        $imageDictionary->Height = new InternalType\NumericObject($imageInfo[1]);
+        $imageDictionary->ColorSpace = new InternalType\NameObject($colorSpace);
         $imageDictionary->BitsPerComponent = new InternalType\NumericObject($imageInfo['bits']);
         if ($imageInfo[2] == IMAGETYPE_JPEG) {
-            $imageDictionary->Filter       = new InternalType\NameObject('DCTDecode');
-        } elseif ($imageInfo[2] == IMAGETYPE_JPEG2000){
-            $imageDictionary->Filter       = new InternalType\NameObject('JPXDecode');
+            $imageDictionary->Filter = new InternalType\NameObject('DCTDecode');
+        } elseif ($imageInfo[2] == IMAGETYPE_JPEG2000) {
+            $imageDictionary->Filter = new InternalType\NameObject('JPXDecode');
         }
 
-        if (($imageFile = @fopen($imageFileName, 'rb')) === false ) {
+        if (($imageFile = @fopen($imageFileName, 'rb')) === false) {
             throw new Exception\IOException("Can not open '$imageFileName' file for reading.");
         }
         $byteCount = filesize($imageFileName);
         $this->_resource->value = '';
-        while ( $byteCount > 0 && ($nextBlock = fread($imageFile, $byteCount)) != false ) {
+        while ($byteCount > 0 && ($nextBlock = fread($imageFile, $byteCount)) != false) {
             $this->_resource->value .= $nextBlock;
             $byteCount -= strlen($nextBlock);
         }
         fclose($imageFile);
         $this->_resource->skipFilters();
 
-    $this->_width = $imageInfo[0];
-    $this->_height = $imageInfo[1];
-    $this->_imageProperties = array();
-    $this->_imageProperties['bitDepth'] = $imageInfo['bits'];
-    $this->_imageProperties['jpegImageType'] = $imageInfo[2];
-    $this->_imageProperties['jpegColorType'] = $imageInfo['channels'];
+        $this->_width = $imageInfo[0];
+        $this->_height = $imageInfo[1];
+        $this->_imageProperties = array();
+        $this->_imageProperties['bitDepth'] = $imageInfo['bits'];
+        $this->_imageProperties['jpegImageType'] = $imageInfo[2];
+        $this->_imageProperties['jpegColorType'] = $imageInfo['channels'];
     }
 
     /**

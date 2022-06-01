@@ -12,6 +12,7 @@ namespace ZendPdf\Resource\Font\Simple\Standard;
 
 use ZendPdf as Pdf;
 use ZendPdf\InternalType;
+use ZendPdf\Resource\Font\Simple\AbstractSimple;
 
 /**
  * Abstract class definition for the standard 14 Type 1 PDF fonts.
@@ -45,7 +46,7 @@ use ZendPdf\InternalType;
  * @package    Zend_PDF
  * @subpackage Zend_PDF_Fonts
  */
-abstract class AbstractStandard extends \ZendPdf\Resource\Font\Simple\AbstractSimple
+abstract class AbstractStandard extends AbstractSimple
 {
     /**** Public Interface ****/
 
@@ -60,6 +61,6 @@ abstract class AbstractStandard extends \ZendPdf\Resource\Font\Simple\AbstractSi
         $this->_fontType = Pdf\Font::TYPE_STANDARD;
 
         parent::__construct();
-        $this->_resource->Subtype  = new InternalType\NameObject('Type1');
+        $this->_resource->Subtype = new InternalType\NameObject('Type1');
     }
 }

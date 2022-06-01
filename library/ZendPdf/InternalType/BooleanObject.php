@@ -12,6 +12,8 @@ namespace ZendPdf\InternalType;
 
 use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
+use ZendPdf\ObjectFactory;
 
 /**
  * PDF file 'boolean' element implementation
@@ -34,15 +36,15 @@ class BooleanObject extends AbstractTypeObject
      * Object constructor
      *
      * @param boolean $val
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct($val)
     {
-        if (! is_bool($val)) {
+        if (!is_bool($val)) {
             throw new Exception\RuntimeException('Argument must be boolean.');
         }
 
-        $this->value   = $val;
+        $this->value = $val;
     }
 
 
@@ -60,10 +62,10 @@ class BooleanObject extends AbstractTypeObject
     /**
      * Return object as string
      *
-     * @param \ZendPdf\ObjectFactory $factory
+     * @param ObjectFactory $factory
      * @return string
      */
-    public function toString(Pdf\ObjectFactory $factory = null)
+    public function toString(ObjectFactory $factory = null)
     {
         return $this->value ? 'true' : 'false';
     }

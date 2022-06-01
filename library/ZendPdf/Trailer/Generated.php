@@ -11,7 +11,7 @@
 namespace ZendPdf\Trailer;
 
 use ZendPdf as Pdf;
-use ZendPdf\InternalType;
+use ZendPdf\InternalType\DictionaryObject;
 
 /**
  * PDF file trailer generator (used for just created PDF)
@@ -24,9 +24,9 @@ class Generated extends AbstractTrailer
     /**
      * Object constructor
      *
-     * @param \ZendPdf\InternalType\DictionaryObject $dict
+     * @param DictionaryObject $dict
      */
-    public function __construct(InternalType\DictionaryObject $dict)
+    public function __construct(DictionaryObject $dict)
     {
         parent::__construct($dict);
     }

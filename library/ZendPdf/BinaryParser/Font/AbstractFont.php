@@ -12,6 +12,9 @@ namespace ZendPdf\BinaryParser\Font;
 
 use Zend\Log;
 use ZendPdf\BinaryParser;
+use ZendPdf\BinaryParser\DataSource\AbstractDataSource;
+use ZendPdf\Exception\ExceptionInterface;
+use ZendPdf\Font;
 
 /**
  * Abstract helper class for {@link \ZendPdf\Font} that parses font files.
@@ -42,7 +45,6 @@ abstract class AbstractFont extends BinaryParser\AbstractBinaryParser
     private $_debug = false;
 
 
-
     /**** Public Interface ****/
 
 
@@ -53,13 +55,13 @@ abstract class AbstractFont extends BinaryParser\AbstractBinaryParser
      *
      * Validates the data source and enables debug logging if so configured.
      *
-     * @param \ZendPdf\BinaryParser\DataSource\AbstractDataSource $dataSource
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @param AbstractDataSource $dataSource
+     * @throws ExceptionInterface
      */
-    public function __construct(BinaryParser\DataSource\AbstractDataSource $dataSource)
+    public function __construct(AbstractDataSource $dataSource)
     {
         parent::__construct($dataSource);
-        $this->fontType = \ZendPdf\Font::TYPE_UNKNOWN;
+        $this->fontType = Font::TYPE_UNKNOWN;
     }
 
 
@@ -86,10 +88,26 @@ abstract class AbstractFont extends BinaryParser\AbstractBinaryParser
     /* Parser Methods */
 
     /**
+     * Set handler
+     *
+     * NOTE: This method is protected. Other classes may freely interrogate
+     * the font properties, but only this and its subclasses may set them.
+     *
+     * @param string $property
+     * @param mixed $value
+     */
+    public function __set($property, $value)
+    {
+        if ($value === null) {
+            unset($this->_fontProperties[$property]);
+        } else {
+            $this->_fontProperties[$property] = $value;
+        }
+    }
+
+    /**
      * Reads the Unicode UTF-16-encoded string from the binary file at the
      * current offset location. Overridden to fix return character set at UTF-16BE.
-     *
-     * @todo Deal with to-dos in the parent method.
      *
      * @param integer $byteCount Number of bytes (characters * 2) to return.
      * @param integer $byteOrder (optional) Big- or little-endian byte order.
@@ -97,7 +115,9 @@ abstract class AbstractFont extends BinaryParser\AbstractBinaryParser
      *   omitted, uses big-endian.
      * @param string $characterSet (optional) --Ignored--
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
+     * @todo Deal with to-dos in the parent method.
+     *
      */
     public function readStringUTF16($byteCount,
                                     $byteOrder = BinaryParser\AbstractBinaryParser::BYTE_ORDER_BIG_ENDIAN,
@@ -113,12 +133,15 @@ abstract class AbstractFont extends BinaryParser\AbstractBinaryParser
      * @param integer $byteCount Number of bytes (characters) to return.
      * @param string $characterSet (optional) --Ignored--
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function readStringMacRoman($byteCount, $characterSet = '')
     {
         return parent::readStringMacRoman($byteCount, 'UTF-16BE');
     }
+
+
+    /* Utility Methods */
 
     /**
      * Reads the Pascal string from the binary file at the current offset
@@ -128,22 +151,11 @@ abstract class AbstractFont extends BinaryParser\AbstractBinaryParser
      * @param integer $lengthBytes (optional) Number of bytes that make up the
      *   length. Default is 1.
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function readStringPascal($characterSet = '', $lengthBytes = 1)
     {
         return parent::readStringPascal('UTF-16BE');
-    }
-
-
-    /* Utility Methods */
-
-    /**
-     * Writes the entire font properties array to STDOUT. Used only for debugging.
-     */
-    public function writeDebug()
-    {
-        print_r($this->_fontProperties);
     }
 
 
@@ -154,21 +166,11 @@ abstract class AbstractFont extends BinaryParser\AbstractBinaryParser
     /* Internal Accessors */
 
     /**
-     * Set handler
-     *
-     * NOTE: This method is protected. Other classes may freely interrogate
-     * the font properties, but only this and its subclasses may set them.
-     *
-     * @param string $property
-     * @param  mixed $value
+     * Writes the entire font properties array to STDOUT. Used only for debugging.
      */
-    public function __set($property, $value)
+    public function writeDebug()
     {
-        if ($value === null) {
-            unset($this->_fontProperties[$property]);
-        } else {
-            $this->_fontProperties[$property] = $value;
-        }
+        print_r($this->_fontProperties);
     }
 
 
@@ -185,7 +187,7 @@ abstract class AbstractFont extends BinaryParser\AbstractBinaryParser
      */
     protected function _debugLog($message)
     {
-        if (! $this->_debug) {
+        if (!$this->_debug) {
             return;
         }
         if (func_num_args() > 1) {

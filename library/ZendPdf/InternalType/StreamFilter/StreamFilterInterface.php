@@ -10,6 +10,8 @@
 
 namespace ZendPdf\InternalType\StreamFilter;
 
+use ZendPdf\Exception\ExceptionInterface;
+
 /**
  * PDF stream filter
  *
@@ -24,7 +26,7 @@ interface StreamFilterInterface
      * @param string $data
      * @param array $params
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public static function encode($data, $params = null);
 
@@ -34,7 +36,7 @@ interface StreamFilterInterface
      * @param string $data
      * @param array $params
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public static function decode($data, $params = null);
 }

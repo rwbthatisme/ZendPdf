@@ -12,7 +12,9 @@ namespace ZendPdf\Destination;
 
 use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\Page;
 
 /**
  * \ZendPdf\Destination\FitRectangle explicit detination
@@ -33,19 +35,19 @@ class FitRectangle extends AbstractExplicitDestination
     /**
      * Create destination object
      *
-     * @param \ZendPdf\Page|integer $page  Page object or page number
-     * @param float $left    Left edge of displayed page
-     * @param float $bottom  Bottom edge of displayed page
-     * @param float $right   Right edge of displayed page
-     * @param float $top     Top edge of displayed page
-     * @return \ZendPdf\Destination\FitRectangle
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @param Page|integer $page Page object or page number
+     * @param float $left Left edge of displayed page
+     * @param float $bottom Bottom edge of displayed page
+     * @param float $right Right edge of displayed page
+     * @param float $top Top edge of displayed page
+     * @return FitRectangle
+     * @throws ExceptionInterface
      */
     public static function create($page, $left, $bottom, $right, $top)
     {
         $destinationArray = new InternalType\ArrayObject();
 
-        if ($page instanceof Pdf\Page) {
+        if ($page instanceof Page) {
             $destinationArray->items[] = $page->getPageDictionary();
         } elseif (is_integer($page)) {
             $destinationArray->items[] = new InternalType\NumericObject($page);
@@ -76,7 +78,7 @@ class FitRectangle extends AbstractExplicitDestination
      * Set left edge of the displayed page
      *
      * @param float $left
-     * @return \ZendPdf\Destination\FitRectangle
+     * @return FitRectangle
      */
     public function setLeftEdge($left)
     {
@@ -98,7 +100,7 @@ class FitRectangle extends AbstractExplicitDestination
      * Set bottom edge of the displayed page
      *
      * @param float $bottom
-     * @return \ZendPdf\Destination\FitRectangle
+     * @return FitRectangle
      */
     public function setBottomEdge($bottom)
     {
@@ -120,7 +122,7 @@ class FitRectangle extends AbstractExplicitDestination
      * Set right edge of the displayed page
      *
      * @param float $right
-     * @return \ZendPdf\Destination\FitRectangle
+     * @return FitRectangle
      */
     public function setRightEdge($right)
     {
@@ -142,7 +144,7 @@ class FitRectangle extends AbstractExplicitDestination
      * Set top edge of the displayed page
      *
      * @param float $top
-     * @return \ZendPdf\Destination\FitRectangle
+     * @return FitRectangle
      */
     public function setTopEdge($top)
     {

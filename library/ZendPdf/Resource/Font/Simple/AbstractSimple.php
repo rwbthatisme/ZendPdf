@@ -10,6 +10,7 @@
 
 namespace ZendPdf\Resource\Font\Simple;
 
+use ZendPdf\Cmap\AbstractCmap;
 use ZendPdf\InternalType;
 use ZendPdf\Resource\Font as FontResource;
 
@@ -48,7 +49,7 @@ abstract class AbstractSimple extends FontResource\AbstractFont
      * Object representing the font's cmap (character to glyph map).
      * Is set in descending classes
      *
-     * @var \ZendPdf\Cmap\AbstractCmap
+     * @var AbstractCmap
      */
     protected $_cmap = null;
 
@@ -192,7 +193,7 @@ abstract class AbstractSimple extends FontResource\AbstractFont
                 $score++;
             }
         }
-        return $score/$charCount;
+        return $score / $charCount;
     }
 
     /**

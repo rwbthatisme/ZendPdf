@@ -11,6 +11,7 @@
 namespace ZendPdf\Resource\Font;
 
 use ZendPdf as Pdf;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
 use ZendPdf\Resource;
 
@@ -112,7 +113,6 @@ abstract class AbstractFont extends Resource\AbstractResource
     protected $_lineGap = 0;
 
 
-
     /**** Public Interface ****/
 
 
@@ -145,17 +145,6 @@ abstract class AbstractFont extends Resource\AbstractResource
 
 
     /* Accessors */
-
-    /**
-     * Returns the type of font.
-     *
-     * @return integer One of the TYPE_ constants defined in
-     *   {@link \ZendPdf\Font}.
-     */
-    public function getFontType()
-    {
-        return $this->_fontType;
-    }
 
     /**
      * Returns the specified descriptive name for the font.
@@ -204,7 +193,7 @@ abstract class AbstractFont extends Resource\AbstractResource
      */
     public function getFontName($nameType, $language, $characterSet = null)
     {
-        if (! isset($this->_fontNames[$nameType])) {
+        if (!isset($this->_fontNames[$nameType])) {
             return null;
         }
         $name = null;
@@ -224,7 +213,7 @@ abstract class AbstractFont extends Resource\AbstractResource
          */
         if ($name === null) {
             $names = $this->_fontNames[$nameType];
-            $name  = reset($names);
+            $name = reset($names);
         }
         /* Convert the character set if requested.
          */
@@ -232,6 +221,17 @@ abstract class AbstractFont extends Resource\AbstractResource
             $name = iconv('UTF-16BE', $characterSet, $name);
         }
         return $name;
+    }
+
+    /**
+     * Returns the type of font.
+     *
+     * @return integer One of the TYPE_ constants defined in
+     *   {@link \ZendPdf\Font}.
+     */
+    public function getFontType()
+    {
+        return $this->_fontType;
     }
 
     /**
@@ -451,7 +451,7 @@ abstract class AbstractFont extends Resource\AbstractResource
      *
      * @param array $glyphNumbers Array of glyph numbers.
      * @return array Array of glyph widths (integers).
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     abstract public function widthsForGlyphs($glyphNumbers);
 
@@ -462,7 +462,7 @@ abstract class AbstractFont extends Resource\AbstractResource
      *
      * @param integer $glyphNumber
      * @return integer
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     abstract public function widthForGlyph($glyphNumber);
 
@@ -496,9 +496,9 @@ abstract class AbstractFont extends Resource\AbstractResource
     /**
      * If the font's glyph space is not 1000 units per em, converts the value.
      *
-     * @internal
      * @param integer $value
      * @return integer
+     * @internal
      */
     public function toEmSpace($value)
     {

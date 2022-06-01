@@ -11,6 +11,7 @@
 namespace ZendPdf\Color;
 
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\NumericObject;
 
 /**
  * GrayScale color implementation
@@ -25,7 +26,7 @@ class GrayScale implements ColorInterface
      * GrayLevel.
      * 0.0 (black) - 1.0 (white)
      *
-     * @var \ZendPdf\InternalType\NumericObject
+     * @var NumericObject
      */
     private $_grayLevel;
 
@@ -36,10 +37,14 @@ class GrayScale implements ColorInterface
      */
     public function __construct($grayLevel)
     {
-        if ($grayLevel < 0) { $grayLevel = 0; }
-        if ($grayLevel > 1) { $grayLevel = 1; }
+        if ($grayLevel < 0) {
+            $grayLevel = 0;
+        }
+        if ($grayLevel > 1) {
+            $grayLevel = 1;
+        }
 
-        $this->_grayLevel = new InternalType\NumericObject($grayLevel);
+        $this->_grayLevel = new NumericObject($grayLevel);
     }
 
     /**
@@ -52,7 +57,7 @@ class GrayScale implements ColorInterface
      */
     public function instructions($stroking)
     {
-        return $this->_grayLevel->toString() . ($stroking? " G\n" : " g\n");
+        return $this->_grayLevel->toString() . ($stroking ? " G\n" : " g\n");
     }
 
     /**

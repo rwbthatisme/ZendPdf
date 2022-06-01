@@ -12,6 +12,8 @@ namespace ZendPdf\InternalType;
 
 use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
+use ZendPdf\ObjectFactory;
 
 /**
  * PDF file 'name' element implementation
@@ -34,17 +36,39 @@ class NameObject extends AbstractTypeObject
      * Object constructor
      *
      * @param string $val
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct($val)
     {
         settype($val, 'string');
-        if (strpos($val,"\x00") !== false) {
+        if (strpos($val, "\x00") !== false) {
             throw new Exception\RuntimeException('Null character is not allowed in PDF Names');
         }
-        $this->value   = (string)$val;
+        $this->value = (string)$val;
     }
 
+    /**
+     * Unescape string according to the PDF rules
+     *
+     * @param string $inStr
+     * @return string
+     */
+    public static function unescape($inStr)
+    {
+        $outStr = '';
+
+        /** @todo switch implementation to strspn() usage!!!!!!! */
+        for ($count = 0; $count < strlen($inStr); $count++) {
+            if ($inStr[$count] != '#') {
+                $outStr .= $inStr[$count];
+            } else {
+                // Escape sequence
+                $outStr .= chr(base_convert(substr($inStr, $count + 1, 2), 16, 10));
+                $count += 2;
+            }
+        }
+        return $outStr;
+    }
 
     /**
      * Return type of the element.
@@ -56,6 +80,16 @@ class NameObject extends AbstractTypeObject
         return AbstractTypeObject::TYPE_NAME;
     }
 
+    /**
+     * Return object as string
+     *
+     * @param ObjectFactory $factory
+     * @return string
+     */
+    public function toString(ObjectFactory $factory = null)
+    {
+        return '/' . self::escape((string)$this->value);
+    }
 
     /**
      * Escape string according to the PDF rules
@@ -73,33 +107,33 @@ class NameObject extends AbstractTypeObject
 
             switch ($inStr[$count]) {
                 case '(':
-                // fall through to next case
+                    // fall through to next case
                 case ')':
-                // fall through to next case
+                    // fall through to next case
                 case '<':
-                // fall through to next case
+                    // fall through to next case
                 case '>':
-                // fall through to next case
+                    // fall through to next case
                 case '[':
-                // fall through to next case
+                    // fall through to next case
                 case ']':
-                // fall through to next case
+                    // fall through to next case
                 case '{':
-                // fall through to next case
+                    // fall through to next case
                 case '}':
-                // fall through to next case
+                    // fall through to next case
                 case '/':
-                // fall through to next case
+                    // fall through to next case
                 case '%':
-                // fall through to next case
+                    // fall through to next case
                 case '\\':
-                // fall through to next case
+                    // fall through to next case
                 case '#':
                     $outStr .= sprintf('#%02X', $nextCode);
                     break;
 
                 default:
-                    if ($nextCode >= 33 && $nextCode <= 126 ) {
+                    if ($nextCode >= 33 && $nextCode <= 126) {
                         // Visible ASCII symbol
                         $outStr .= $inStr[$count];
                     } else {
@@ -109,41 +143,5 @@ class NameObject extends AbstractTypeObject
         }
 
         return $outStr;
-    }
-
-
-    /**
-     * Unescape string according to the PDF rules
-     *
-     * @param string $inStr
-     * @return string
-     */
-    public static function unescape($inStr)
-    {
-        $outStr = '';
-
-        /** @todo switch implementation to strspn() usage!!!!!!! */
-        for ($count = 0; $count < strlen($inStr); $count++) {
-            if ($inStr[$count] != '#' )  {
-                $outStr .= $inStr[$count];
-            } else {
-                // Escape sequence
-                $outStr .= chr(base_convert(substr($inStr, $count+1, 2), 16, 10 ));
-                $count +=2;
-            }
-        }
-        return $outStr;
-    }
-
-
-    /**
-     * Return object as string
-     *
-     * @param \ZendPdf\ObjectFactory $factory
-     * @return string
-     */
-    public function toString(Pdf\ObjectFactory $factory = null)
-    {
-        return '/' . self::escape((string)$this->value);
     }
 }

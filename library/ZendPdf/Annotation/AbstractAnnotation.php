@@ -10,9 +10,13 @@
 
 namespace ZendPdf\Annotation;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\AbstractTypeObject;
+use ZendPdf\InternalType\DictionaryObject;
+use ZendPdf\InternalType\IndirectObject;
+use ZendPdf\InternalType\IndirectObjectReference;
 
 /**
  * Abstract PDF annotation representation class
@@ -29,27 +33,69 @@ abstract class AbstractAnnotation
     /**
      * Annotation dictionary
      *
-     * @var \ZendPdf\InternalType\DictionaryObject|\ZendPdf\InternalType\IndirectObject|\ZendPdf\InternalType\IndirectObjectReference
+     * @var DictionaryObject|IndirectObject|IndirectObjectReference
      */
     protected $_annotationDictionary;
 
     /**
+     * Annotation object constructor
+     *
+     * @throws ExceptionInterface
+     */
+    public function __construct(AbstractTypeObject $annotationDictionary)
+    {
+        if ($annotationDictionary->getType() != AbstractTypeObject::TYPE_DICTIONARY) {
+            throw new Exception\CorruptedPdfException('Annotation dictionary resource has to be a dictionary.');
+        }
+
+        $this->_annotationDictionary = $annotationDictionary;
+
+        if ($this->_annotationDictionary->Type !== null &&
+            $this->_annotationDictionary->Type->value != 'Annot') {
+            throw new Exception\CorruptedPdfException('Wrong resource type. \'Annot\' expected.');
+        }
+
+        if ($this->_annotationDictionary->Rect === null) {
+            throw new Exception\CorruptedPdfException('\'Rect\' dictionary entry is required.');
+        }
+
+        if (count($this->_annotationDictionary->Rect->items) != 4 ||
+            $this->_annotationDictionary->Rect->items[0]->getType() != AbstractTypeObject::TYPE_NUMERIC ||
+            $this->_annotationDictionary->Rect->items[1]->getType() != AbstractTypeObject::TYPE_NUMERIC ||
+            $this->_annotationDictionary->Rect->items[2]->getType() != AbstractTypeObject::TYPE_NUMERIC ||
+            $this->_annotationDictionary->Rect->items[3]->getType() != AbstractTypeObject::TYPE_NUMERIC) {
+            throw new Exception\CorruptedPdfException('\'Rect\' dictionary entry must be an array of four numeric elements.');
+        }
+    }
+
+    /**
+     * Load Annotation object from a specified resource
+     *
+     * @param $destinationArray
+     * @return AbstractAnnotation
+     * @internal
+     */
+    public static function load(AbstractTypeObject $resource)
+    {
+        /** @todo implementation */
+    }
+
+    /**
      * Get annotation dictionary
      *
+     * @return AbstractTypeObject
      * @internal
-     * @return \ZendPdf\InternalType\AbstractTypeObject
      */
     public function getResource()
     {
         return $this->_annotationDictionary;
     }
 
-
     /**
      * Set bottom edge of the annotation rectangle.
      *
      * @param float $bottom
-     * @return \ZendPdf\Annotation\AbstractAnnotation
+     * @return AbstractAnnotation
      */
     public function setBottom($bottom)
     {
@@ -73,7 +119,7 @@ abstract class AbstractAnnotation
      * Set top edge of the annotation rectangle.
      *
      * @param float $top
-     * @return \ZendPdf\Annotation\AbstractAnnotation
+     * @return AbstractAnnotation
      */
     public function setTop($top)
     {
@@ -97,7 +143,7 @@ abstract class AbstractAnnotation
      * Set right edge of the annotation rectangle.
      *
      * @param float $right
-     * @return \ZendPdf\Annotation\AbstractAnnotation
+     * @return AbstractAnnotation
      */
     public function setRight($right)
     {
@@ -121,7 +167,7 @@ abstract class AbstractAnnotation
      * Set left edge of the annotation rectangle.
      *
      * @param float $left
-     * @return \ZendPdf\Annotation\AbstractAnnotation
+     * @return AbstractAnnotation
      */
     public function setLeft($left)
     {
@@ -163,7 +209,7 @@ abstract class AbstractAnnotation
      * in human-readable form.
      *
      * @param string $text
-     * @return \ZendPdf\Annotation\AbstractAnnotation
+     * @return AbstractAnnotation
      */
     public function setText($text)
     {
@@ -176,48 +222,5 @@ abstract class AbstractAnnotation
         }
 
         return $this;
-    }
-
-    /**
-     * Annotation object constructor
-     *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    public function __construct(InternalType\AbstractTypeObject $annotationDictionary)
-    {
-        if ($annotationDictionary->getType() != InternalType\AbstractTypeObject::TYPE_DICTIONARY) {
-            throw new Exception\CorruptedPdfException('Annotation dictionary resource has to be a dictionary.');
-        }
-
-        $this->_annotationDictionary = $annotationDictionary;
-
-        if ($this->_annotationDictionary->Type !== null  &&
-            $this->_annotationDictionary->Type->value != 'Annot') {
-            throw new Exception\CorruptedPdfException('Wrong resource type. \'Annot\' expected.');
-        }
-
-        if ($this->_annotationDictionary->Rect === null) {
-            throw new Exception\CorruptedPdfException('\'Rect\' dictionary entry is required.');
-        }
-
-        if (count($this->_annotationDictionary->Rect->items) != 4 ||
-            $this->_annotationDictionary->Rect->items[0]->getType() != InternalType\AbstractTypeObject::TYPE_NUMERIC ||
-            $this->_annotationDictionary->Rect->items[1]->getType() != InternalType\AbstractTypeObject::TYPE_NUMERIC ||
-            $this->_annotationDictionary->Rect->items[2]->getType() != InternalType\AbstractTypeObject::TYPE_NUMERIC ||
-            $this->_annotationDictionary->Rect->items[3]->getType() != InternalType\AbstractTypeObject::TYPE_NUMERIC ) {
-            throw new Exception\CorruptedPdfException('\'Rect\' dictionary entry must be an array of four numeric elements.');
-        }
-    }
-
-    /**
-     * Load Annotation object from a specified resource
-     *
-     * @internal
-     * @param $destinationArray
-     * @return \ZendPdf\Annotation\AbstractAnnotation
-     */
-    public static function load(InternalType\AbstractTypeObject $resource)
-    {
-        /** @todo implementation */
     }
 }

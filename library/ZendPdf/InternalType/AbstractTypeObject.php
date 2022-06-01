@@ -11,6 +11,7 @@
 namespace ZendPdf\InternalType;
 
 use ZendPdf as Pdf;
+use ZendPdf\ObjectFactory;
 
 /**
  * PDF file element implementation
@@ -20,21 +21,55 @@ use ZendPdf as Pdf;
  */
 abstract class AbstractTypeObject
 {
-    const TYPE_BOOL        = 1;
-    const TYPE_NUMERIC     = 2;
-    const TYPE_STRING      = 3;
-    const TYPE_NAME        = 4;
-    const TYPE_ARRAY       = 5;
-    const TYPE_DICTIONARY  = 6;
-    const TYPE_STREAM      = 7;
-    const TYPE_NULL        = 11;
-
+    const TYPE_BOOL = 1;
+    const TYPE_NUMERIC = 2;
+    const TYPE_STRING = 3;
+    const TYPE_NAME = 4;
+    const TYPE_ARRAY = 5;
+    const TYPE_DICTIONARY = 6;
+    const TYPE_STREAM = 7;
+    const TYPE_NULL = 11;
+const CLONE_MODE_SKIP_PAGES = 1;
+const CLONE_MODE_FORCE_CLONING = 2;
     /**
      * Reference to the top level indirect object, which contains this element.
      *
-     * @var \ZendPdf\InternalType\IndirectObject
+     * @var IndirectObject
      */
     private $_parentObject = null;
+
+    /**
+     * Convert PHP value into PDF element.
+     *
+     * @param mixed $input
+     * @return AbstractTypeObject
+     */
+    public static function phpToPDF($input)
+    {
+        if (is_numeric($input)) {
+            return new NumericObject($input);
+        } elseif (is_bool($input)) {
+            return new BooleanObject($input);
+        } elseif (is_array($input)) {
+            $pdfElementsArray = array();
+            $isDictionary = false;
+
+            foreach ($input as $key => $value) {
+                if (is_string($key)) {
+                    $isDictionary = true;
+                }
+                $pdfElementsArray[$key] = self::phpToPDF($value);
+            }
+
+            if ($isDictionary) {
+                return new DictionaryObject($pdfElementsArray);
+            } else {
+                return new ArrayObject($pdfElementsArray);
+            }
+        } else {
+            return new StringObject((string)$input);
+        }
+    } // Do not follow pages during deep copy process
 
     /**
      * Return type of the element.
@@ -42,7 +77,7 @@ abstract class AbstractTypeObject
      *
      * @return integer
      */
-    abstract public function getType();
+    abstract public function getType(); // Force top level object cloning even it's already processed
 
     /**
      * Convert element to a string, which can be directly
@@ -50,14 +85,10 @@ abstract class AbstractTypeObject
      *
      * $factory parameter defines operation context.
      *
-     * @param \ZendPdf\ObjectFactory $factory
+     * @param ObjectFactory $factory
      * @return string
      */
-    abstract public function toString(Pdf\ObjectFactory $factory = null);
-
-
-    const CLONE_MODE_SKIP_PAGES    = 1; // Do not follow pages during deep copy process
-    const CLONE_MODE_FORCE_CLONING = 2; // Force top level object cloning even it's already processed
+    abstract public function toString(ObjectFactory $factory = null);
 
     /**
      * Detach PDF object from the factory (if applicable), clone it and attach to new factory.
@@ -65,37 +96,35 @@ abstract class AbstractTypeObject
      * @todo It's necessary to check if SplObjectStorage class works faster
      * (Needs PHP 5.3.x to attach object _with_ additional data to storage)
      *
-     * @param \ZendPdf\ObjectFactory $factory  The factory to attach
+     * @param ObjectFactory $factory The factory to attach
      * @param array &$processed List of already processed indirect objects, used to avoid objects duplication
-     * @param integer $mode  Cloning mode (defines filter for objects cloning)
-     * @returns \ZendPdf\InternalType\AbstractTypeObject
+     * @param integer $mode Cloning mode (defines filter for objects cloning)
+     * @returns AbstractTypeObject
      */
-    public function makeClone(Pdf\ObjectFactory $factory, array &$processed, $mode)
+    public function makeClone(ObjectFactory $factory, array &$processed, $mode)
     {
         return clone $this;
     }
 
     /**
-     * Set top level parent indirect object.
-     *
-     * @param \ZendPdf\InternalType\IndirectObject $parent
-     */
-    public function setParentObject(IndirectObject $parent)
-    {
-        $this->_parentObject = $parent;
-    }
-
-
-    /**
      * Get top level parent indirect object.
      *
-     * @return \ZendPdf\InternalType\IndirectObject
+     * @return IndirectObject
      */
     public function getParentObject()
     {
         return $this->_parentObject;
     }
 
+    /**
+     * Set top level parent indirect object.
+     *
+     * @param IndirectObject $parent
+     */
+    public function setParentObject(IndirectObject $parent)
+    {
+        $this->_parentObject = $parent;
+    }
 
     /**
      * Mark object as modified, to include it into new PDF file segment.
@@ -126,38 +155,5 @@ abstract class AbstractTypeObject
     public function toPhp()
     {
         return $this->value;
-    }
-
-    /**
-     * Convert PHP value into PDF element.
-     *
-     * @param mixed $input
-     * @return \ZendPdf\InternalType\AbstractTypeObject
-     */
-    public static function phpToPDF($input)
-    {
-        if (is_numeric($input)) {
-            return new NumericObject($input);
-        } elseif (is_bool($input)) {
-            return new BooleanObject($input);
-        } elseif (is_array($input)) {
-            $pdfElementsArray = array();
-            $isDictionary = false;
-
-            foreach ($input as $key => $value) {
-                if (is_string($key)) {
-                    $isDictionary = true;
-                }
-                $pdfElementsArray[$key] = self::phpToPDF($value);
-            }
-
-            if ($isDictionary) {
-                return new DictionaryObject($pdfElementsArray);
-            } else {
-                return new ArrayObject($pdfElementsArray);
-            }
-        } else {
-            return new StringObject((string)$input);
-        }
     }
 }

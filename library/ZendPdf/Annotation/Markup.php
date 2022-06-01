@@ -10,8 +10,8 @@
 
 namespace ZendPdf\Annotation;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
 
 /**
@@ -27,13 +27,13 @@ class Markup extends AbstractAnnotation
      */
     const SUBTYPE_HIGHLIGHT = 'Highlight';
     const SUBTYPE_UNDERLINE = 'Underline';
-    const SUBTYPE_SQUIGGLY  = 'Squiggly';
+    const SUBTYPE_SQUIGGLY = 'Squiggly';
     const SUBTYPE_STRIKEOUT = 'StrikeOut';
 
     /**
      * Annotation object constructor
      *
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct(InternalType\AbstractTypeObject $annotationDictionary)
     {
@@ -41,13 +41,13 @@ class Markup extends AbstractAnnotation
             throw new Exception\CorruptedPdfException('Annotation dictionary resource has to be a dictionary.');
         }
 
-        if ($annotationDictionary->Subtype === null  ||
-            $annotationDictionary->Subtype->getType() != InternalType\AbstractTypeObject::TYPE_NAME  ||
-            !in_array( $annotationDictionary->Subtype->value,
-                       array(self::SUBTYPE_HIGHLIGHT,
-                             self::SUBTYPE_UNDERLINE,
-                             self::SUBTYPE_SQUIGGLY,
-                             self::SUBTYPE_STRIKEOUT) )) {
+        if ($annotationDictionary->Subtype === null ||
+            $annotationDictionary->Subtype->getType() != InternalType\AbstractTypeObject::TYPE_NAME ||
+            !in_array($annotationDictionary->Subtype->value,
+                array(self::SUBTYPE_HIGHLIGHT,
+                    self::SUBTYPE_UNDERLINE,
+                    self::SUBTYPE_SQUIGGLY,
+                    self::SUBTYPE_STRIKEOUT))) {
             throw new Exception\CorruptedPdfException('Subtype => Markup entry is omitted or has wrong value.');
         }
 
@@ -85,15 +85,15 @@ class Markup extends AbstractAnnotation
      * @param float $y2
      * @param string $text
      * @param string $subType
-     * @param array $quadPoints  [x1 y1 x2 y2 x3 y3 x4 y4]
-     * @return \ZendPdf\Annotation\Markup
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @param array $quadPoints [x1 y1 x2 y2 x3 y3 x4 y4]
+     * @return Markup
+     * @throws ExceptionInterface
      */
     public static function create($x1, $y1, $x2, $y2, $text, $subType, $quadPoints)
     {
         $annotationDictionary = new InternalType\DictionaryObject();
 
-        $annotationDictionary->Type    = new InternalType\NameObject('Annot');
+        $annotationDictionary->Type = new InternalType\NameObject('Annot');
         $annotationDictionary->Subtype = new InternalType\NameObject($subType);
 
         $rectangle = new InternalType\ArrayObject();
@@ -105,7 +105,7 @@ class Markup extends AbstractAnnotation
 
         $annotationDictionary->Contents = new InternalType\StringObject($text);
 
-        if (!is_array($quadPoints)  ||  count($quadPoints) == 0  ||  count($quadPoints) % 8 != 0) {
+        if (!is_array($quadPoints) || count($quadPoints) == 0 || count($quadPoints) % 8 != 0) {
             throw new Exception\InvalidArgumentException('$quadPoints parameter must be an array of 8xN numbers');
         }
         $points = new InternalType\ArrayObject();

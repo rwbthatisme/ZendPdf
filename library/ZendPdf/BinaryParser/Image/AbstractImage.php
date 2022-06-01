@@ -11,6 +11,8 @@
 namespace ZendPdf\BinaryParser\Image;
 
 use ZendPdf\BinaryParser;
+use ZendPdf\BinaryParser\DataSource\AbstractDataSource;
+use ZendPdf\Image;
 
 /**
  * \ZendPdf\Image related file parsers abstract class.
@@ -32,11 +34,11 @@ abstract class AbstractImage extends BinaryParser\AbstractBinaryParser
      *
      * Validates the data source and enables debug logging if so configured.
      *
-     * @param \ZendPdf\BinaryParser\DataSource\AbstractDataSource $dataSource
+     * @param AbstractDataSource $dataSource
      */
-    public function __construct(\ZendPdf\BinaryParser\DataSource\AbstractDataSource $dataSource)
+    public function __construct(AbstractDataSource $dataSource)
     {
         parent::__construct($dataSource);
-        $this->imageType = \ZendPdf\Image::TYPE_UNKNOWN;
+        $this->imageType = Image::TYPE_UNKNOWN;
     }
 }

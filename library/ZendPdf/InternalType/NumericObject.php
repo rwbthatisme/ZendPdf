@@ -12,6 +12,8 @@ namespace ZendPdf\InternalType;
 
 use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
+use ZendPdf\ObjectFactory;
 
 /**
  * PDF file 'numeric' element implementation
@@ -34,7 +36,7 @@ class NumericObject extends AbstractTypeObject
      * Object constructor
      *
      * @param numeric $val
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct($val)
     {
@@ -60,10 +62,10 @@ class NumericObject extends AbstractTypeObject
     /**
      * Return object as string
      *
-     * @param \ZendPdf\ObjectFactory $factory
+     * @param ObjectFactory $factory
      * @return string
      */
-    public function toString(Pdf\ObjectFactory $factory = null)
+    public function toString(ObjectFactory $factory = null)
     {
         if (is_integer($this->value)) {
             return (string)$this->value;
@@ -73,9 +75,11 @@ class NumericObject extends AbstractTypeObject
          * PDF doesn't support exponental format.
          * Fixed point format must be used instead
          */
-        $prec = 0; $v = $this->value;
-        while (abs( floor($v) - $v ) > 1e-10) {
-            $prec++; $v *= 10;
+        $prec = 0;
+        $v = $this->value;
+        while (abs(floor($v) - $v) > 1e-10) {
+            $prec++;
+            $v *= 10;
         }
         return sprintf("%.{$prec}F", $this->value);
     }

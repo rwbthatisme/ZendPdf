@@ -10,11 +10,14 @@
 
 namespace ZendPdf\InternalStructure;
 
-use ZendPdf as Pdf;
 use ZendPdf\Action;
+use ZendPdf\Action\AbstractAction;
 use ZendPdf\Destination;
+use ZendPdf\Destination\AbstractDestination;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\AbstractTypeObject;
 
 /**
  * PDF target (action or destination)
@@ -28,15 +31,15 @@ abstract class NavigationTarget
      * Parse resource and return it as an Action or Explicit Destination
      *
      * $param \ZendPdf\InternalType $resource
-     * @return \ZendPdf\Destination\AbstractDestination|\ZendPdf\Action\AbstractAction
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @return AbstractDestination|AbstractAction
+     * @throws ExceptionInterface
      */
-    public static function load(InternalType\AbstractTypeObject $resource)
+    public static function load(AbstractTypeObject $resource)
     {
-        if ($resource->getType() == InternalType\AbstractTypeObject::TYPE_DICTIONARY) {
-            if (($resource->Type === null  ||  $resource->Type->value =='Action')  &&  $resource->S !== null) {
+        if ($resource->getType() == AbstractTypeObject::TYPE_DICTIONARY) {
+            if (($resource->Type === null || $resource->Type->value == 'Action') && $resource->S !== null) {
                 // It's a well-formed action, load it
-                return Action\AbstractAction::load($resource);
+                return AbstractAction::load($resource);
             } elseif ($resource->D !== null) {
                 // It's a destination
                 $resource = $resource->D;
@@ -45,11 +48,11 @@ abstract class NavigationTarget
             }
         }
 
-        if ($resource->getType() == InternalType\AbstractTypeObject::TYPE_ARRAY  ||
-            $resource->getType() == InternalType\AbstractTypeObject::TYPE_NAME   ||
-            $resource->getType() == InternalType\AbstractTypeObject::TYPE_STRING) {
+        if ($resource->getType() == AbstractTypeObject::TYPE_ARRAY ||
+            $resource->getType() == AbstractTypeObject::TYPE_NAME ||
+            $resource->getType() == AbstractTypeObject::TYPE_STRING) {
             // Resource is an array, just treat it as an explicit destination array
-            return Destination\AbstractDestination::load($resource);
+            return AbstractDestination::load($resource);
         } else {
             throw new Exception\CorruptedPdfException('Wrong resource type.');
         }
@@ -58,8 +61,8 @@ abstract class NavigationTarget
     /**
      * Get resource
      *
+     * @return AbstractTypeObject
      * @internal
-     * @return \ZendPdf\InternalType\AbstractTypeObject
      */
     abstract public function getResource();
 }

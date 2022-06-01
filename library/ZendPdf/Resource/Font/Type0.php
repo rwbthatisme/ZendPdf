@@ -11,7 +11,9 @@
 namespace ZendPdf\Resource\Font;
 
 use ZendPdf as Pdf;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\Resource\Font\CidFont\AbstractCidFont;
 
 /**
  * Adobe PDF composite fonts implementation
@@ -48,39 +50,9 @@ class Type0 extends AbstractFont
     /**
      * Descendant CIDFont
      *
-     * @var \ZendPdf\Resource\Font\CidFont\AbstractCidFont
+     * @var AbstractCidFont
      */
     private $_descendantFont;
-
-
-    /**
-     * Generate ToUnicode character map data
-     *
-     * @return string
-     */
-    private static function getToUnicodeCMapData()
-    {
-        return '/CIDInit /ProcSet findresource begin '              . "\n"
-             . '12 dict begin '                                     . "\n"
-             . 'begincmap '                                         . "\n"
-             . '/CIDSystemInfo '                                    . "\n"
-             . '<</Registry (Adobe) '                               . "\n"
-             . '/Ordering (UCS) '                                   . "\n"
-             . '/Supplement 0'                                      . "\n"
-             . '>> def'                                             . "\n"
-             . '/CMapName /Adobe-Identity-UCS def '                 . "\n"
-             . '/CMapType 2 def '                                   . "\n"
-             . '1 begincodespacerange'                              . "\n"
-             . '<0000> <FFFF> '                                     . "\n"
-             . 'endcodespacerange '                                 . "\n"
-             . '1 beginbfrange '                                    . "\n"
-             . '<0000> <FFFF> <0000> '                              . "\n"
-             . 'endbfrange '                                        . "\n"
-             . 'endcmap '                                           . "\n"
-             . 'CMapName currentdict /CMap defineresource pop '     . "\n"
-             . 'end '
-             . 'end ';
-            }
 
     /**
      * Object constructor
@@ -92,36 +64,65 @@ class Type0 extends AbstractFont
 
         $this->_objectFactory->attach($descendantFont->getFactory());
 
-        $this->_fontType       = Pdf\Font::TYPE_TYPE_0;
+        $this->_fontType = Pdf\Font::TYPE_TYPE_0;
         $this->_descendantFont = $descendantFont;
 
 
-        $this->_fontNames    = $descendantFont->getFontNames();
+        $this->_fontNames = $descendantFont->getFontNames();
 
-        $this->_isBold       = $descendantFont->isBold();
-        $this->_isItalic     = $descendantFont->isItalic();
+        $this->_isBold = $descendantFont->isBold();
+        $this->_isItalic = $descendantFont->isItalic();
         $this->_isMonospaced = $descendantFont->isMonospace();
 
-        $this->_underlinePosition  = $descendantFont->getUnderlinePosition();
+        $this->_underlinePosition = $descendantFont->getUnderlinePosition();
         $this->_underlineThickness = $descendantFont->getUnderlineThickness();
-        $this->_strikePosition     = $descendantFont->getStrikePosition();
-        $this->_strikeThickness    = $descendantFont->getStrikeThickness();
+        $this->_strikePosition = $descendantFont->getStrikePosition();
+        $this->_strikeThickness = $descendantFont->getStrikeThickness();
 
         $this->_unitsPerEm = $descendantFont->getUnitsPerEm();
 
-        $this->_ascent  = $descendantFont->getAscent();
+        $this->_ascent = $descendantFont->getAscent();
         $this->_descent = $descendantFont->getDescent();
         $this->_lineGap = $descendantFont->getLineGap();
 
 
-        $this->_resource->Subtype         = new InternalType\NameObject('Type0');
-        $this->_resource->BaseFont        = new InternalType\NameObject($descendantFont->getResource()->BaseFont->value);
-        $this->_resource->DescendantFonts = new InternalType\ArrayObject(array( $descendantFont->getResource() ));
-        $this->_resource->Encoding        = new InternalType\NameObject('Identity-H');
+        $this->_resource->Subtype = new InternalType\NameObject('Type0');
+        $this->_resource->BaseFont = new InternalType\NameObject($descendantFont->getResource()->BaseFont->value);
+        $this->_resource->DescendantFonts = new InternalType\ArrayObject(array($descendantFont->getResource()));
+        $this->_resource->Encoding = new InternalType\NameObject('Identity-H');
 
         $toUnicode = $this->_objectFactory->newStreamObject(self::getToUnicodeCMapData());
         $this->_resource->ToUnicode = $toUnicode;
 
+    }
+
+    /**
+     * Generate ToUnicode character map data
+     *
+     * @return string
+     */
+    private static function getToUnicodeCMapData()
+    {
+        return '/CIDInit /ProcSet findresource begin ' . "\n"
+            . '12 dict begin ' . "\n"
+            . 'begincmap ' . "\n"
+            . '/CIDSystemInfo ' . "\n"
+            . '<</Registry (Adobe) ' . "\n"
+            . '/Ordering (UCS) ' . "\n"
+            . '/Supplement 0' . "\n"
+            . '>> def' . "\n"
+            . '/CMapName /Adobe-Identity-UCS def ' . "\n"
+            . '/CMapType 2 def ' . "\n"
+            . '1 begincodespacerange' . "\n"
+            . '<0000> <FFFF> ' . "\n"
+            . 'endcodespacerange ' . "\n"
+            . '1 beginbfrange ' . "\n"
+            . '<0000> <FFFF> <0000> ' . "\n"
+            . 'endbfrange ' . "\n"
+            . 'endcmap ' . "\n"
+            . 'CMapName currentdict /CMap defineresource pop ' . "\n"
+            . 'end '
+            . 'end ';
     }
 
     /**
@@ -189,7 +190,7 @@ class Type0 extends AbstractFont
      *
      * @param array &$glyphNumbers Array of glyph numbers.
      * @return array Array of glyph widths (integers).
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function widthsForGlyphs($glyphNumbers)
     {
@@ -203,7 +204,7 @@ class Type0 extends AbstractFont
      *
      * @param integer $glyphNumber
      * @return integer
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function widthForGlyph($glyphNumber)
     {
@@ -233,7 +234,7 @@ class Type0 extends AbstractFont
      * @param string $charEncoding Character encoding of resulting text.
      * @return string
      */
-        public function decodeString($string, $charEncoding)
+    public function decodeString($string, $charEncoding)
     {
         return iconv('UTF-16BE', $charEncoding, $string);
     }

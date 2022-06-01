@@ -10,8 +10,8 @@
 
 namespace ZendPdf\Cmap;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * Custom cmap type used for the Adobe Standard 14 PDF fonts.
@@ -34,11 +34,11 @@ class StaticByteEncoding extends ByteEncoding
      *
      * @param array $cmapData Array whose keys are Unicode character codes and
      *   values are glyph numbers.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct($cmapData)
     {
-        if (! is_array($cmapData)) {
+        if (!is_array($cmapData)) {
             throw new Exception\CorruptedFontException('Constructor parameter must be an array');
         }
         $this->_glyphIndexArray = $cmapData;

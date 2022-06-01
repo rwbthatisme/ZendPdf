@@ -10,8 +10,8 @@
 
 namespace ZendPdf\Cmap;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * Implements the "trimmed table mapping" character map (type 6).
@@ -47,11 +47,73 @@ class TrimmedTable extends AbstractCmap
     protected $_glyphIndexArray = array();
 
 
-
     /**** Public Interface ****/
 
 
     /* Concrete Class Implementation */
+
+    /**
+     * Object constructor
+     *
+     * Parses the raw binary table data. Throws an exception if the table is
+     * malformed.
+     *
+     * @param string $cmapData Raw binary cmap table data.
+     * @throws ExceptionInterface
+     */
+    public function __construct($cmapData)
+    {
+        /* Sanity check: The table should be at least 9 bytes in size.
+         */
+        $actualLength = strlen($cmapData);
+        if ($actualLength < 9) {
+            throw new Exception\CorruptedFontException('Insufficient table data');
+        }
+
+        /* Sanity check: Make sure this is right data for this table type.
+         */
+        $type = $this->_extractUInt2($cmapData, 0);
+        if ($type != AbstractCmap::TYPE_TRIMMED_TABLE) {
+            throw new Exception\CorruptedFontException('Wrong cmap table type');
+        }
+
+        $length = $this->_extractUInt2($cmapData, 2);
+        if ($length != $actualLength) {
+            throw new Exception\CorruptedFontException("Table length ($length) does not match actual length ($actualLength)");
+        }
+
+        /* Mapping tables should be language-independent. The font may not work
+         * as expected if they are not. Unfortunately, many font files in the
+         * wild incorrectly record a language ID in this field, so we can't
+         * call this a failure.
+         */
+        $language = $this->_extractUInt2($cmapData, 4);
+        if ($language != 0) {
+            // Record a warning here somehow?
+        }
+
+        $this->_startCode = $this->_extractUInt2($cmapData, 6);
+
+        $entryCount = $this->_extractUInt2($cmapData, 8);
+        $expectedCount = ($length - 10) >> 1;
+        if ($entryCount != $expectedCount) {
+            throw new Exception\CorruptedFontException("Entry count is wrong; expected: $expectedCount; actual: $entryCount");
+        }
+
+        $this->_endCode = $this->_startCode + $entryCount - 1;
+
+        $offset = 10;
+        for ($i = 0; $i < $entryCount; $i++, $offset += 2) {
+            $this->_glyphIndexArray[] = $this->_extractUInt2($cmapData, $offset);
+        }
+
+        /* Sanity check: After reading all of the data, we should be at the end
+         * of the table.
+         */
+        if ($offset != $length) {
+            throw new Exception\CorruptedFontException("Ending offset ($offset) does not match length ($length)");
+        }
+    }
 
     /**
      * Returns an array of glyph numbers corresponding to the Unicode characters.
@@ -118,6 +180,8 @@ class TrimmedTable extends AbstractCmap
     }
 
 
+    /* Object Lifecycle */
+
     /**
      * Returns an array containing the glyphs numbers that have entries in this character map.
      * Keys are Unicode character codes (integers)
@@ -126,8 +190,8 @@ class TrimmedTable extends AbstractCmap
      * call, but this method do it in more effective way (prepare complete list instead of searching
      * glyph for each character code).
      *
-     * @internal
      * @return array Array representing <Unicode character code> => <glyph number> pairs.
+     * @internal
      */
     public function getCoveredCharactersGlyphs()
     {
@@ -137,71 +201,5 @@ class TrimmedTable extends AbstractCmap
         }
 
         return $glyphNumbers;
-    }
-
-
-    /* Object Lifecycle */
-
-    /**
-     * Object constructor
-     *
-     * Parses the raw binary table data. Throws an exception if the table is
-     * malformed.
-     *
-     * @param string $cmapData Raw binary cmap table data.
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    public function __construct($cmapData)
-    {
-        /* Sanity check: The table should be at least 9 bytes in size.
-         */
-        $actualLength = strlen($cmapData);
-        if ($actualLength < 9) {
-            throw new Exception\CorruptedFontException('Insufficient table data');
-        }
-
-        /* Sanity check: Make sure this is right data for this table type.
-         */
-        $type = $this->_extractUInt2($cmapData, 0);
-        if ($type != AbstractCmap::TYPE_TRIMMED_TABLE) {
-            throw new Exception\CorruptedFontException('Wrong cmap table type');
-        }
-
-        $length = $this->_extractUInt2($cmapData, 2);
-        if ($length != $actualLength) {
-            throw new Exception\CorruptedFontException("Table length ($length) does not match actual length ($actualLength)");
-        }
-
-        /* Mapping tables should be language-independent. The font may not work
-         * as expected if they are not. Unfortunately, many font files in the
-         * wild incorrectly record a language ID in this field, so we can't
-         * call this a failure.
-         */
-        $language = $this->_extractUInt2($cmapData, 4);
-        if ($language != 0) {
-            // Record a warning here somehow?
-        }
-
-        $this->_startCode = $this->_extractUInt2($cmapData, 6);
-
-        $entryCount = $this->_extractUInt2($cmapData, 8);
-        $expectedCount = ($length - 10) >> 1;
-        if ($entryCount != $expectedCount) {
-            throw new Exception\CorruptedFontException("Entry count is wrong; expected: $expectedCount; actual: $entryCount");
-        }
-
-        $this->_endCode = $this->_startCode + $entryCount - 1;
-
-        $offset = 10;
-        for ($i = 0; $i < $entryCount; $i++, $offset += 2) {
-            $this->_glyphIndexArray[] = $this->_extractUInt2($cmapData, $offset);
-        }
-
-        /* Sanity check: After reading all of the data, we should be at the end
-         * of the table.
-         */
-        if ($offset != $length) {
-            throw new Exception\CorruptedFontException("Ending offset ($offset) does not match length ($length)");
-        }
     }
 }

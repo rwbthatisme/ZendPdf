@@ -12,6 +12,7 @@ namespace ZendPdf\Resource\Font\CidFont;
 
 use ZendPdf as Pdf;
 use ZendPdf\BinaryParser\Font\OpenType as OpenTypeFontParser;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
 use ZendPdf\Resource\Font as FontResource;
 
@@ -33,12 +34,12 @@ class TrueType extends AbstractCidFont
     /**
      * Object constructor
      *
-     * @todo Joing this class with \ZendPdf\Resource\Font\Simple\Parsed\TrueType
-     *
-     * @param \ZendPdf\BinaryParser\Font\OpenType\TrueType $fontParser Font parser
+     * @param OpenTypeFontParser\TrueType $fontParser Font parser
      *   object containing parsed TrueType file.
      * @param integer $embeddingOptions Options for font embedding.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
+     * @todo Joing this class with \ZendPdf\Resource\Font\Simple\Parsed\TrueType
+     *
      */
     public function __construct(OpenTypeFontParser\TrueType $fontParser, $embeddingOptions)
     {
@@ -46,7 +47,7 @@ class TrueType extends AbstractCidFont
 
         $this->_fontType = Pdf\Font::TYPE_CIDFONT_TYPE_2;
 
-        $this->_resource->Subtype  = new InternalType\NameObject('CIDFontType2');
+        $this->_resource->Subtype = new InternalType\NameObject('CIDFontType2');
 
         $fontDescriptor = FontResource\FontDescriptor::factory($this, $fontParser, $embeddingOptions);
         $this->_resource->FontDescriptor = $this->_objectFactory->newObject($fontDescriptor);
@@ -57,8 +58,8 @@ class TrueType extends AbstractCidFont
         // Fill the index
         $charGlyphs = $this->_cmap->getCoveredCharactersGlyphs();
         foreach ($charGlyphs as $charCode => $glyph) {
-            $cidToGidMapData[$charCode*2    ] = chr($glyph >> 8);
-            $cidToGidMapData[$charCode*2 + 1] = chr($glyph & 0xFF);
+            $cidToGidMapData[$charCode * 2] = chr($glyph >> 8);
+            $cidToGidMapData[$charCode * 2 + 1] = chr($glyph & 0xFF);
         }
         // Store CIDToGIDMap within compressed stream object
         $cidToGidMap = $this->_objectFactory->newStreamObject($cidToGidMapData);

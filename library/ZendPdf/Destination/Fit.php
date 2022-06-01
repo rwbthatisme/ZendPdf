@@ -12,7 +12,9 @@ namespace ZendPdf\Destination;
 
 use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\Page;
 
 /**
  * \ZendPdf\Destination\Fit explicit detination
@@ -33,15 +35,15 @@ class Fit extends AbstractExplicitDestination
     /**
      * Create destination object
      *
-     * @param \ZendPdf\Page|integer $page  Page object or page number
-     * @return \ZendPdf\Destination\Fit
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @param Page|integer $page Page object or page number
+     * @return Fit
+     * @throws ExceptionInterface
      */
     public static function create($page)
     {
         $destinationArray = new InternalType\ArrayObject();
 
-        if ($page instanceof Pdf\Page) {
+        if ($page instanceof Page) {
             $destinationArray->items[] = $page->getPageDictionary();
         } elseif (is_integer($page)) {
             $destinationArray->items[] = new InternalType\NumericObject($page);

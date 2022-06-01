@@ -10,8 +10,8 @@
 
 namespace ZendPdf\Cmap;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * Abstract helper class for {@link \ZendPdf\Resource\Font\AbstractFont}
@@ -102,11 +102,24 @@ abstract class AbstractCmap
     const MISSING_CHARACTER_GLYPH = 0x00;
 
 
-
     /**** Public Interface ****/
 
 
     /* Factory Methods */
+
+    /**
+     * Object constructor
+     *
+     * Parses the raw binary table data. Throws an exception if the table is
+     * malformed.
+     *
+     * @param string $cmapData Raw binary cmap table data.
+     * @throws ExceptionInterface
+     */
+    abstract public function __construct($cmapData);
+
+
+    /* Abstract Methods */
 
     /**
      * Instantiates the appropriate concrete subclass based on the type of cmap
@@ -129,8 +142,8 @@ abstract class AbstractCmap
      *
      * @param integer $cmapType Type of cmap.
      * @param mixed $cmapData CMap table data. Usually a string or array.
-     * @return \ZendPdf\Cmap\AbstractCmap
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @return AbstractCmap
+     * @throws ExceptionInterface
      */
     public static function cmapWithTypeData($cmapType, $cmapData)
     {
@@ -163,20 +176,6 @@ abstract class AbstractCmap
                 throw new Exception\CorruptedFontException("Unknown cmap type: $cmapType");
         }
     }
-
-
-    /* Abstract Methods */
-
-    /**
-     * Object constructor
-     *
-     * Parses the raw binary table data. Throws an exception if the table is
-     * malformed.
-     *
-     * @param string $cmapData Raw binary cmap table data.
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    abstract public function __construct($cmapData);
 
     /**
      * Returns an array of glyph numbers corresponding to the Unicode characters.
@@ -221,8 +220,8 @@ abstract class AbstractCmap
      * call, but this method do it in more effective way (prepare complete list instead of searching
      * glyph for each character code).
      *
-     * @internal
      * @return array Array representing <Unicode character code> => <glyph number> pairs.
+     * @internal
      */
     abstract public function getCoveredCharactersGlyphs();
 
@@ -241,7 +240,7 @@ abstract class AbstractCmap
      * @param string &$data
      * @param integer $index Position in string of integer.
      * @return integer
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     protected function _extractInt2(&$data, $index)
     {
@@ -250,7 +249,7 @@ abstract class AbstractCmap
         }
         $number = ord($data[$index]);
         if (($number & 0x80) == 0x80) {    // negative
-            $number = ~((((~ $number) & 0xff) << 8) | ((~ ord($data[++$index])) & 0xff));
+            $number = ~((((~$number) & 0xff) << 8) | ((~ord($data[++$index])) & 0xff));
         } else {
             $number = ($number << 8) | ord($data[++$index]);
         }
@@ -266,7 +265,7 @@ abstract class AbstractCmap
      * @param string &$data
      * @param integer $index Position in string of integer.
      * @return integer
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     protected function _extractUInt2(&$data, $index)
     {
@@ -291,7 +290,7 @@ abstract class AbstractCmap
      * @param string &$data
      * @param integer $index Position in string of integer.
      * @return integer
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     protected function _extractUInt4(&$data, $index)
     {
@@ -299,7 +298,7 @@ abstract class AbstractCmap
             throw new Exception\CorruptedFontException("Index out of range: $index");
         }
         $number = (ord($data[$index]) << 24) | (ord($data[++$index]) << 16) |
-                  (ord($data[++$index]) << 8) | ord($data[++$index]);
+            (ord($data[++$index]) << 8) | ord($data[++$index]);
         return $number;
     }
 }

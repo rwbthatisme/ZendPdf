@@ -10,8 +10,8 @@
 
 namespace ZendPdf\Annotation;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
 
 /**
@@ -26,7 +26,7 @@ class FileAttachment extends AbstractAnnotation
     /**
      * Annotation object constructor
      *
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function __construct(InternalType\AbstractTypeObject $annotationDictionary)
     {
@@ -34,8 +34,8 @@ class FileAttachment extends AbstractAnnotation
             throw new Exception\CorruptedPdfException('Annotation dictionary resource has to be a dictionary.');
         }
 
-        if ($annotationDictionary->Subtype === null  ||
-            $annotationDictionary->Subtype->getType() != InternalType\AbstractTypeObject::TYPE_NAME  ||
+        if ($annotationDictionary->Subtype === null ||
+            $annotationDictionary->Subtype->getType() != InternalType\AbstractTypeObject::TYPE_NAME ||
             $annotationDictionary->Subtype->value != 'FileAttachment') {
             throw new Exception\CorruptedPdfException('Subtype => FileAttachment entry is requires');
         }
@@ -51,13 +51,13 @@ class FileAttachment extends AbstractAnnotation
      * @param float $x2
      * @param float $y2
      * @param string $fileSpecification
-     * @return \ZendPdf\Annotation\FileAttachment
+     * @return FileAttachment
      */
     public static function create($x1, $y1, $x2, $y2, $fileSpecification)
     {
         $annotationDictionary = new InternalType\DictionaryObject();
 
-        $annotationDictionary->Type    = new InternalType\NameObject('Annot');
+        $annotationDictionary->Type = new InternalType\NameObject('Annot');
         $annotationDictionary->Subtype = new InternalType\NameObject('FileAttachment');
 
         $rectangle = new InternalType\ArrayObject();
@@ -69,7 +69,7 @@ class FileAttachment extends AbstractAnnotation
 
         $fsDictionary = new InternalType\DictionaryObject();
         $fsDictionary->Type = new InternalType\NameObject('Filespec');
-        $fsDictionary->F    = new InternalType\StringObject($fileSpecification);
+        $fsDictionary->F = new InternalType\StringObject($fileSpecification);
 
         $annotationDictionary->FS = $fsDictionary;
 

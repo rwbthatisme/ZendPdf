@@ -11,6 +11,7 @@
 namespace ZendPdf\InternalType\IndirectObjectReference;
 
 use ZendPdf\PdfParser;
+use ZendPdf\PdfParser\DataParser;
 
 /**
  * PDF reference object context
@@ -25,34 +26,34 @@ class Context
     /**
      * PDF parser object.
      *
-     * @var \ZendPdf\PdfParser\DataParser
+     * @var DataParser
      */
     private $_stringParser;
 
     /**
      * Reference table
      *
-     * @var \ZendPdf\InternalType\IndirectObjectReference\ReferenceTable
+     * @var ReferenceTable
      */
     private $_refTable;
 
     /**
      * Object constructor
      *
-     * @param \ZendPdf\PdfParser\DataParser $parser
-     * @param \ZendPdf\InternalType\IndirectObjectReference\ReferenceTable $refTable
+     * @param DataParser $parser
+     * @param ReferenceTable $refTable
      */
-    public function __construct(PdfParser\DataParser $parser, ReferenceTable $refTable)
+    public function __construct(DataParser $parser, ReferenceTable $refTable)
     {
         $this->_stringParser = $parser;
-        $this->_refTable     = $refTable;
+        $this->_refTable = $refTable;
     }
 
 
     /**
      * Context parser
      *
-     * @return \ZendPdf\PdfParser\DataParser
+     * @return DataParser
      */
     public function getParser()
     {
@@ -63,7 +64,7 @@ class Context
     /**
      * Context reference table
      *
-     * @return \ZendPdf\InternalType\IndirectObjectReference\ReferenceTable
+     * @return ReferenceTable
      */
     public function getRefTable()
     {

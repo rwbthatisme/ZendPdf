@@ -10,10 +10,18 @@
 
 namespace ZendPdf\PdfParser;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\AbstractTypeObject;
+use ZendPdf\InternalType\ArrayObject;
+use ZendPdf\InternalType\BinaryStringObject;
+use ZendPdf\InternalType\DictionaryObject;
+use ZendPdf\InternalType\IndirectObject;
 use ZendPdf\InternalType\IndirectObjectReference;
+use ZendPdf\InternalType\IndirectObjectReference\Context;
+use ZendPdf\InternalType\NumericObject;
+use ZendPdf\InternalType\StringObject;
 use ZendPdf\ObjectFactory;
 
 /**
@@ -41,7 +49,7 @@ class DataParser
     /**
      * Current reference context
      *
-     * @var \ZendPdf\InternalType\IndirectObjectReference\Context
+     * @var Context
      */
     private $_context = null;
 
@@ -55,21 +63,23 @@ class DataParser
     /**
      * PDF objects factory.
      *
-     * @var \ZendPdf\ObjectFactory
+     * @var ObjectFactory
      */
     private $_objFactory = null;
 
-
     /**
-     * Clean up resources.
+     * Object constructor
      *
-     * Clear current state to remove cyclic object references
+     * Note: PHP duplicates string, which is sent by value, only of it's updated.
+     * Thus we don't need to care about overhead
+     *
+     * @param string $pdfString
+     * @param ObjectFactory $factory
      */
-    public function cleanUp()
+    public function __construct($source, ObjectFactory $factory)
     {
-        $this->_context = null;
-        $this->_elements = array();
-        $this->_objFactory = null;
+        $this->data = $source;
+        $this->_objFactory = $factory;
     }
 
     /**
@@ -86,7 +96,7 @@ class DataParser
             $chCode == 0x0C || // Form Feed
             $chCode == 0x0D || // Carriage return
             $chCode == 0x20    // Space
-           ) {
+        ) {
             return true;
         } else {
             return false;
@@ -100,7 +110,7 @@ class DataParser
      * @param integer $chCode
      * @return boolean
      */
-    public static function isDelimiter($chCode )
+    public static function isDelimiter($chCode)
     {
         if ($chCode == 0x28 || // '('
             $chCode == 0x29 || // ')'
@@ -112,13 +122,86 @@ class DataParser
             $chCode == 0x7D || // '}'
             $chCode == 0x2F || // '/'
             $chCode == 0x25    // '%'
-           ) {
+        ) {
             return true;
         } else {
             return false;
         }
     }
 
+    /**
+     * Parse integer value from a binary stream
+     *
+     * @param string $stream
+     * @param integer $offset
+     * @param integer $size
+     * @return integer
+     */
+    public static function parseIntFromStream($stream, $offset, $size)
+    {
+        $value = 0;
+        for ($count = 0; $count < $size; $count++) {
+            $value *= 256;
+            $value += ord($stream[$offset + $count]);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Clean up resources.
+     *
+     * Clear current state to remove cyclic object references
+     */
+    public function cleanUp()
+    {
+        $this->_context = null;
+        $this->_elements = array();
+        $this->_objFactory = null;
+    }
+
+    /**
+     * Skip comment
+     */
+    public function skipComment()
+    {
+        while ($this->offset < strlen($this->data)) {
+            if (ord($this->data[$this->offset]) != 0x0A || // Line feed
+                ord($this->data[$this->offset]) != 0x0d    // Carriage return
+            ) {
+                $this->offset++;
+            } else {
+                return;
+            }
+        }
+    }
+
+    /**
+     * Read comment line
+     *
+     * @return string
+     */
+    public function readComment()
+    {
+        $this->skipWhiteSpace(false);
+
+        /** Check if it's a comment line */
+        if ($this->data[$this->offset] != '%') {
+            return '';
+        }
+
+        for ($start = $this->offset;
+             $this->offset < strlen($this->data);
+             $this->offset++) {
+            if (ord($this->data[$this->offset]) == 0x0A || // Line feed
+                ord($this->data[$this->offset]) == 0x0d    // Carriage return
+            ) {
+                break;
+            }
+        }
+
+        return substr($this->data, $start, $this->offset - $start);
+    }
 
     /**
      * Skip white space
@@ -131,7 +214,7 @@ class DataParser
             while (true) {
                 $this->offset += strspn($this->data, "\x00\t\n\f\r ", $this->offset);
 
-                if ($this->offset < strlen($this->data)  &&  $this->data[$this->offset] == '%') {
+                if ($this->offset < strlen($this->data) && $this->data[$this->offset] == '%') {
                     // Skip comment
                     $this->offset += strcspn($this->data, "\r\n", $this->offset);
                 } else {
@@ -156,51 +239,122 @@ class DataParser
 //        }
     }
 
-
     /**
-     * Skip comment
-     */
-    public function skipComment()
-    {
-        while ($this->offset < strlen($this->data)) {
-            if (ord($this->data[$this->offset]) != 0x0A || // Line feed
-                ord($this->data[$this->offset]) != 0x0d    // Carriage return
-               ) {
-                $this->offset++;
-            } else {
-                return;
-            }
-        }
-    }
-
-
-    /**
-     * Read comment line
+     * Read inderect object from a PDF stream
      *
-     * @return string
+     * @param integer $offset
+     * @param Context $context
+     * @return IndirectObject
      */
-    public function readComment()
+    public function getObject($offset, Context $context)
     {
-        $this->skipWhiteSpace(false);
-
-        /** Check if it's a comment line */
-        if ($this->data[$this->offset] != '%') {
-            return '';
+        if ($offset === null) {
+            return new InternalType\NullObject();
         }
 
-        for ($start = $this->offset;
-             $this->offset < strlen($this->data);
-             $this->offset++) {
-            if (ord($this->data[$this->offset]) == 0x0A || // Line feed
-                ord($this->data[$this->offset]) == 0x0d    // Carriage return
-               ) {
-                break;
+        // Save current offset to make getObject() reentrant
+        $offsetSave = $this->offset;
+
+        $this->offset = $offset;
+        $this->_context = $context;
+        $this->_elements = array();
+
+        $objNum = $this->readLexeme();
+        if (!ctype_digit($objNum)) {
+            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. Object number expected.', $this->offset - strlen($objNum)));
+        }
+
+        $genNum = $this->readLexeme();
+        if (!ctype_digit($genNum)) {
+            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. Object generation number expected.', $this->offset - strlen($genNum)));
+        }
+
+        $objKeyword = $this->readLexeme();
+        if ($objKeyword != 'obj') {
+            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. \'obj\' keyword expected.', $this->offset - strlen($objKeyword)));
+        }
+
+        $objValue = $this->readElement();
+
+        $nextLexeme = $this->readLexeme();
+
+        if ($nextLexeme == 'endobj') {
+            /**
+             * Object is not generated by factory (thus it's not marked as modified object).
+             * But factory is assigned to the obect.
+             */
+            $obj = new IndirectObject($objValue, (int)$objNum, (int)$genNum, $this->_objFactory);
+
+            foreach ($this->_elements as $element) {
+                $element->setParentObject($obj);
             }
+
+            // Restore offset value
+            $this->offset = $offsetSave;
+
+            return $obj;
         }
 
-        return substr($this->data, $start, $this->offset-$start);
-    }
+        /**
+         * It's a stream object
+         */
+        if ($nextLexeme != 'stream') {
+            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. \'endobj\' or \'stream\' keywords expected.', $this->offset - strlen($nextLexeme)));
+        }
 
+        if (!$objValue instanceof DictionaryObject) {
+            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. Stream extent must be preceded by stream dictionary.', $this->offset - strlen($nextLexeme)));
+        }
+
+        /**
+         * References are automatically dereferenced at this moment.
+         */
+        $streamLength = $objValue->Length->value;
+
+        /**
+         * 'stream' keyword must be followed by either cr-lf sequence or lf character only.
+         * This restriction gives the possibility to recognize all cases exactly
+         */
+        if ($this->data[$this->offset] == "\r" &&
+            $this->data[$this->offset + 1] == "\n") {
+            $this->offset += 2;
+        } elseif ($this->data[$this->offset] == "\n") {
+            $this->offset++;
+        } else {
+            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. \'stream\' must be followed by either cr-lf sequence or lf character only.', $this->offset - strlen($nextLexeme)));
+        }
+
+        $dataOffset = $this->offset;
+
+        $this->offset += $streamLength;
+
+        $nextLexeme = $this->readLexeme();
+        if ($nextLexeme != 'endstream') {
+            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. \'endstream\' keyword expected.', $this->offset - strlen($nextLexeme)));
+        }
+
+        $nextLexeme = $this->readLexeme();
+        if ($nextLexeme != 'endobj') {
+            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. \'endobj\' keyword expected.', $this->offset - strlen($nextLexeme)));
+        }
+
+        $obj = new InternalType\StreamObject(substr($this->data,
+            $dataOffset,
+            $streamLength),
+            (int)$objNum,
+            (int)$genNum,
+            $this->_objFactory,
+            $objValue);
+
+        foreach ($this->_elements as $element) {
+            $element->setParentObject($obj);
+        }
+
+        // Restore offset value
+        $this->offset = $offsetSave;
+
+        return $obj;
+    }
 
     /**
      * Returns next lexeme from a pdf stream
@@ -213,7 +367,7 @@ class DataParser
         while (true) {
             $this->offset += strspn($this->data, "\x00\t\n\f\r ", $this->offset);
 
-            if ($this->offset < strlen($this->data)  &&  $this->data[$this->offset] == '%') {
+            if ($this->offset < strlen($this->data) && $this->data[$this->offset] == '%') {
                 $this->offset += strcspn($this->data, "\r\n", $this->offset);
             } else {
                 break;
@@ -225,7 +379,7 @@ class DataParser
         }
 
         if ( /* self::isDelimiter( ord($this->data[$start]) ) */
-             strpos('()<>[]{}/%', $this->data[$this->offset]) !== false ) {
+            strpos('()<>[]{}/%', $this->data[$this->offset]) !== false) {
 
             switch (substr($this->data, $this->offset, 2)) {
                 case '<<':
@@ -250,12 +404,11 @@ class DataParser
         }
     }
 
-
     /**
      * Read elemental object from a PDF stream
      *
-     * @return \ZendPdf\InternalType\AbstractTypeObject
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @return AbstractTypeObject
+     * @throws ExceptionInterface
      */
     public function readElement($nextLexeme = null)
     {
@@ -277,8 +430,8 @@ class DataParser
 
             case '/':
                 return ($this->_elements[] = new InternalType\NameObject(
-                                                    InternalType\NameObject::unescape( $this->readLexeme() )
-                                                                      ));
+                    InternalType\NameObject::unescape($this->readLexeme())
+                ));
 
             case '[':
                 return ($this->_elements[] = $this->_readArray());
@@ -298,7 +451,7 @@ class DataParser
                 // fall through to next case
             case '}':
                 throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X.',
-                                                $this->offset));
+                    $this->offset));
 
             default:
                 if (strcasecmp($nextLexeme, 'true') == 0) {
@@ -318,13 +471,12 @@ class DataParser
         }
     }
 
-
     /**
      * Read string PDF object
      * Also reads trailing ')' from a pdf stream
      *
-     * @return \ZendPdf\InternalType\StringObject
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @return StringObject
+     * @throws ExceptionInterface
      */
     private function _readString()
     {
@@ -334,7 +486,7 @@ class DataParser
         $this->offset += strcspn($this->data, '()\\', $this->offset);
 
         while ($this->offset < strlen($this->data)) {
-            switch (ord( $this->data[$this->offset] )) {
+            switch (ord($this->data[$this->offset])) {
                 case 0x28: // '(' - opened bracket in the string, needs balanced pair.
                     $this->offset++;
                     $openedBrackets++;
@@ -359,18 +511,17 @@ class DataParser
             throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Unexpected end of file while string reading. Offset - 0x%X. \')\' expected.', $start));
         }
 
-        return new InternalType\StringObject(InternalType\StringObject::unescape( substr($this->data,
-                                                                                     $start,
-                                                                                     $this->offset - $start - 1) ));
+        return new StringObject(StringObject::unescape(substr($this->data,
+            $start,
+            $this->offset - $start - 1)));
     }
-
 
     /**
      * Read binary string PDF object
      * Also reads trailing '>' from a pdf stream
      *
-     * @return \ZendPdf\InternalType\BinaryStringObject
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @return BinaryStringObject
+     * @throws ExceptionInterface
      */
     private function _readBinaryString()
     {
@@ -386,52 +537,50 @@ class DataParser
             throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Unexpected character while binary string reading. Offset - 0x%X.', $this->offset));
         }
 
-        return new InternalType\BinaryStringObject(
-                       InternalType\BinaryStringObject::unescape( substr($this->data,
-                                                                        $start,
-                                                                        $this->offset - $start - 1) ));
+        return new BinaryStringObject(
+            BinaryStringObject::unescape(substr($this->data,
+                $start,
+                $this->offset - $start - 1)));
     }
-
 
     /**
      * Read array PDF object
      * Also reads trailing ']' from a pdf stream
      *
-     * @return \ZendPdf\InternalType\ArrayObject
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @return ArrayObject
+     * @throws ExceptionInterface
      */
     private function _readArray()
     {
         $elements = array();
 
-        while ( strlen($nextLexeme = $this->readLexeme()) != 0 ) {
+        while (strlen($nextLexeme = $this->readLexeme()) != 0) {
             if ($nextLexeme != ']') {
                 $elements[] = $this->readElement($nextLexeme);
             } else {
-                return new InternalType\ArrayObject($elements);
+                return new ArrayObject($elements);
             }
         }
 
         throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Unexpected end of file while array reading. Offset - 0x%X. \']\' expected.', $this->offset));
     }
 
-
     /**
      * Read dictionary PDF object
      * Also reads trailing '>>' from a pdf stream
      *
-     * @return \ZendPdf\InternalType\DictionaryObject
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @return DictionaryObject
+     * @throws ExceptionInterface
      */
     private function _readDictionary()
     {
-        $dictionary = new InternalType\DictionaryObject();
+        $dictionary = new DictionaryObject();
 
-        while ( strlen($nextLexeme = $this->readLexeme()) != 0 ) {
+        while (strlen($nextLexeme = $this->readLexeme()) != 0) {
             if ($nextLexeme != '>>') {
                 $nameStart = $this->offset - strlen($nextLexeme);
 
-                $name  = $this->readElement($nextLexeme);
+                $name = $this->readElement($nextLexeme);
                 $value = $this->readElement();
 
                 if (!$name instanceof InternalType\NameObject) {
@@ -447,12 +596,11 @@ class DataParser
         throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Unexpected end of file while dictionary reading. Offset - 0x%X. \'>>\' expected.', $this->offset));
     }
 
-
     /**
      * Read reference PDF object
      *
      * @param string $nextLexeme
-     * @return \ZendPdf\InternalType\IndirectObjectReference
+     * @return IndirectObjectReference
      */
     private function _readReference($nextLexeme = null)
     {
@@ -474,7 +622,7 @@ class DataParser
             return null;
         }
 
-        $rMark  = $this->readLexeme();
+        $rMark = $this->readLexeme();
         if ($rMark != 'R') { // it's not a reference
             $this->offset = $start;
             return null;
@@ -485,12 +633,11 @@ class DataParser
         return $ref;
     }
 
-
     /**
      * Read numeric PDF object
      *
      * @param string $nextLexeme
-     * @return \ZendPdf\InternalType\NumericObject
+     * @return NumericObject
      */
     private function _readNumeric($nextLexeme = null)
     {
@@ -498,127 +645,8 @@ class DataParser
             $nextLexeme = $this->readLexeme();
         }
 
-        return new InternalType\NumericObject($nextLexeme);
+        return new NumericObject($nextLexeme);
     }
-
-
-    /**
-     * Read inderect object from a PDF stream
-     *
-     * @param integer $offset
-     * @param \ZendPdf\InternalType\IndirectObjectReference\Context $context
-     * @return \ZendPdf\InternalType\IndirectObject
-     */
-    public function getObject($offset, IndirectObjectReference\Context $context)
-    {
-        if ($offset === null ) {
-            return new InternalType\NullObject();
-        }
-
-        // Save current offset to make getObject() reentrant
-        $offsetSave = $this->offset;
-
-        $this->offset    = $offset;
-        $this->_context  = $context;
-        $this->_elements = array();
-
-        $objNum = $this->readLexeme();
-        if (!ctype_digit($objNum)) {
-            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. Object number expected.', $this->offset - strlen($objNum)));
-        }
-
-        $genNum = $this->readLexeme();
-        if (!ctype_digit($genNum)) {
-            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. Object generation number expected.', $this->offset - strlen($genNum)));
-        }
-
-        $objKeyword = $this->readLexeme();
-        if ($objKeyword != 'obj') {
-            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. \'obj\' keyword expected.', $this->offset - strlen($objKeyword)));
-        }
-
-        $objValue = $this->readElement();
-
-        $nextLexeme = $this->readLexeme();
-
-        if( $nextLexeme == 'endobj' ) {
-            /**
-             * Object is not generated by factory (thus it's not marked as modified object).
-             * But factory is assigned to the obect.
-             */
-            $obj = new InternalType\IndirectObject($objValue, (int)$objNum, (int)$genNum, $this->_objFactory);
-
-            foreach ($this->_elements as $element) {
-                $element->setParentObject($obj);
-            }
-
-            // Restore offset value
-            $this->offset = $offsetSave;
-
-            return $obj;
-        }
-
-        /**
-         * It's a stream object
-         */
-        if ($nextLexeme != 'stream') {
-            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. \'endobj\' or \'stream\' keywords expected.', $this->offset - strlen($nextLexeme)));
-        }
-
-        if (!$objValue instanceof InternalType\DictionaryObject) {
-            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. Stream extent must be preceded by stream dictionary.', $this->offset - strlen($nextLexeme)));
-        }
-
-        /**
-         * References are automatically dereferenced at this moment.
-         */
-        $streamLength = $objValue->Length->value;
-
-        /**
-         * 'stream' keyword must be followed by either cr-lf sequence or lf character only.
-         * This restriction gives the possibility to recognize all cases exactly
-         */
-        if ($this->data[$this->offset] == "\r" &&
-            $this->data[$this->offset + 1] == "\n"    ) {
-            $this->offset += 2;
-        } elseif ($this->data[$this->offset] == "\n"    ) {
-            $this->offset++;
-        } else {
-            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. \'stream\' must be followed by either cr-lf sequence or lf character only.', $this->offset - strlen($nextLexeme)));
-        }
-
-        $dataOffset = $this->offset;
-
-        $this->offset += $streamLength;
-
-        $nextLexeme = $this->readLexeme();
-        if ($nextLexeme != 'endstream') {
-            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. \'endstream\' keyword expected.', $this->offset - strlen($nextLexeme)));
-        }
-
-        $nextLexeme = $this->readLexeme();
-        if ($nextLexeme != 'endobj') {
-            throw new Exception\CorruptedPdfException(sprintf('PDF file syntax error. Offset - 0x%X. \'endobj\' keyword expected.', $this->offset - strlen($nextLexeme)));
-        }
-
-        $obj = new InternalType\StreamObject(substr($this->data,
-                                                         $dataOffset,
-                                                         $streamLength),
-                                             (int)$objNum,
-                                             (int)$genNum,
-                                             $this->_objFactory,
-                                             $objValue);
-
-        foreach ($this->_elements as $element) {
-            $element->setParentObject($obj);
-        }
-
-        // Restore offset value
-        $this->offset = $offsetSave;
-
-        return $obj;
-    }
-
 
     /**
      * Get length of source string
@@ -640,50 +668,13 @@ class DataParser
         return $this->data;
     }
 
-
-    /**
-     * Parse integer value from a binary stream
-     *
-     * @param string $stream
-     * @param integer $offset
-     * @param integer $size
-     * @return integer
-     */
-    public static function parseIntFromStream($stream, $offset, $size)
-    {
-        $value = 0;
-        for ($count = 0; $count < $size; $count++) {
-            $value *= 256;
-            $value += ord($stream[$offset + $count]);
-        }
-
-        return $value;
-    }
-
-
-
     /**
      * Set current context
      *
-     * @param \ZendPdf\InternalType\IndirectObjectReference\Context $context
+     * @param Context $context
      */
-    public function setContext(IndirectObjectReference\Context $context)
+    public function setContext(Context $context)
     {
         $this->_context = $context;
-    }
-
-    /**
-     * Object constructor
-     *
-     * Note: PHP duplicates string, which is sent by value, only of it's updated.
-     * Thus we don't need to care about overhead
-     *
-     * @param string $pdfString
-     * @param \ZendPdf\ObjectFactory $factory
-     */
-    public function __construct($source, ObjectFactory $factory)
-    {
-        $this->data         = $source;
-        $this->_objFactory  = $factory;
     }
 }

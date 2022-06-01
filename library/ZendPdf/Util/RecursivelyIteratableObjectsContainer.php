@@ -10,6 +10,9 @@
 
 namespace ZendPdf\Util;
 
+use Countable;
+use RecursiveIterator;
+
 /**
  * Iteratable objects container
  *
@@ -17,6 +20,6 @@ namespace ZendPdf\Util;
  * @subpackage Zend_PDF_Util
  * @deprecated Use RecursivelyIterableObjectsContainer instead
  */
-class RecursivelyIteratableObjectsContainer extends RecursivelyIterableObjectsContainer implements \RecursiveIterator, \Countable
+class RecursivelyIteratableObjectsContainer extends RecursivelyIterableObjectsContainer implements RecursiveIterator, Countable
 {
 }

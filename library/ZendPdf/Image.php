@@ -10,7 +10,13 @@
 
 namespace ZendPdf;
 
+use ZendPdf\BinaryParser\DataSource\AbstractDataSource;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
+use ZendPdf\Resource\Image\AbstractImage;
+use ZendPdf\Resource\Image\Jpeg;
+use ZendPdf\Resource\Image\Png;
+use ZendPdf\Resource\Image\Tiff;
 
 /**
  * Abstract factory class which vends {@link \ZendPdf\Resource\Image\AbstractImage} objects.
@@ -36,38 +42,38 @@ abstract class Image
 
     /* TIFF Constants */
 
-    const TIFF_FIELD_TYPE_BYTE=1;
-    const TIFF_FIELD_TYPE_ASCII=2;
-    const TIFF_FIELD_TYPE_SHORT=3;
-    const TIFF_FIELD_TYPE_LONG=4;
-    const TIFF_FIELD_TYPE_RATIONAL=5;
+    const TIFF_FIELD_TYPE_BYTE = 1;
+    const TIFF_FIELD_TYPE_ASCII = 2;
+    const TIFF_FIELD_TYPE_SHORT = 3;
+    const TIFF_FIELD_TYPE_LONG = 4;
+    const TIFF_FIELD_TYPE_RATIONAL = 5;
 
-    const TIFF_TAG_IMAGE_WIDTH=256;
-    const TIFF_TAG_IMAGE_LENGTH=257; //Height
-    const TIFF_TAG_BITS_PER_SAMPLE=258;
-    const TIFF_TAG_COMPRESSION=259;
-    const TIFF_TAG_PHOTOMETRIC_INTERPRETATION=262;
-    const TIFF_TAG_STRIP_OFFSETS=273;
-    const TIFF_TAG_SAMPLES_PER_PIXEL=277;
-    const TIFF_TAG_STRIP_BYTE_COUNTS=279;
+    const TIFF_TAG_IMAGE_WIDTH = 256;
+    const TIFF_TAG_IMAGE_LENGTH = 257; //Height
+    const TIFF_TAG_BITS_PER_SAMPLE = 258;
+    const TIFF_TAG_COMPRESSION = 259;
+    const TIFF_TAG_PHOTOMETRIC_INTERPRETATION = 262;
+    const TIFF_TAG_STRIP_OFFSETS = 273;
+    const TIFF_TAG_SAMPLES_PER_PIXEL = 277;
+    const TIFF_TAG_STRIP_BYTE_COUNTS = 279;
 
     const TIFF_COMPRESSION_UNCOMPRESSED = 1;
     const TIFF_COMPRESSION_CCITT1D = 2;
     const TIFF_COMPRESSION_GROUP_3_FAX = 3;
-    const TIFF_COMPRESSION_GROUP_4_FAX  = 4;
+    const TIFF_COMPRESSION_GROUP_4_FAX = 4;
     const TIFF_COMPRESSION_LZW = 5;
     const TIFF_COMPRESSION_JPEG = 6;
     const TIFF_COMPRESSION_FLATE = 8;
     const TIFF_COMPRESSION_FLATE_OBSOLETE_CODE = 32946;
     const TIFF_COMPRESSION_PACKBITS = 32773;
 
-    const TIFF_PHOTOMETRIC_INTERPRETATION_WHITE_IS_ZERO=0;
-    const TIFF_PHOTOMETRIC_INTERPRETATION_BLACK_IS_ZERO=1;
-    const TIFF_PHOTOMETRIC_INTERPRETATION_RGB=2;
-    const TIFF_PHOTOMETRIC_INTERPRETATION_RGB_INDEXED=3;
-    const TIFF_PHOTOMETRIC_INTERPRETATION_CMYK=5;
-    const TIFF_PHOTOMETRIC_INTERPRETATION_YCBCR=6;
-    const TIFF_PHOTOMETRIC_INTERPRETATION_CIELAB=8;
+    const TIFF_PHOTOMETRIC_INTERPRETATION_WHITE_IS_ZERO = 0;
+    const TIFF_PHOTOMETRIC_INTERPRETATION_BLACK_IS_ZERO = 1;
+    const TIFF_PHOTOMETRIC_INTERPRETATION_RGB = 2;
+    const TIFF_PHOTOMETRIC_INTERPRETATION_RGB_INDEXED = 3;
+    const TIFF_PHOTOMETRIC_INTERPRETATION_CMYK = 5;
+    const TIFF_PHOTOMETRIC_INTERPRETATION_YCBCR = 6;
+    const TIFF_PHOTOMETRIC_INTERPRETATION_CIELAB = 8;
 
     /* PNG Constants */
 
@@ -100,8 +106,8 @@ abstract class Image
      * Returns a {@link \ZendPdf\Resource\Image\AbstractImage} object by file path.
      *
      * @param string $filePath Full path to the image file.
-     * @return \ZendPdf\Resource\Image\AbstractImage
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @return AbstractImage
+     * @throws ExceptionInterface
      */
     public static function imageWithPath($filePath)
     {
@@ -157,7 +163,7 @@ abstract class Image
             /* The type of image could not be determined. Give up.
              */
             throw new Exception\DomainException("Cannot determine image type: $filePath");
-         }
+        }
     }
 
 
@@ -168,19 +174,19 @@ abstract class Image
     /* Image Extraction Methods */
 
     /**
-     * Attempts to extract a JPEG Image from the data source.
+     * Attempts to extract a TIFF Image from the data source.
      *
-     * @param \ZendPdf\BinaryParser\DataSource\AbstractDataSource $dataSource
-     * @return \ZendPdf\Resource\Image\Jpeg May also return null if
+     * @param AbstractDataSource $dataSource
+     * @return Tiff May also return null if
      *   the data source does not appear to contain valid image data.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
-    protected static function _extractJpegImage($dataSource)
+    protected static function _extractTiffImage($dataSource)
     {
-        throw new Exception\NotImplementedException('Jpeg image fileparser is not implemented. Old styly implementation has to be used.');
+        throw new Exception\NotImplementedException('Tiff image fileparser is not implemented. Old styly implementation has to be used.');
 
-        $imageParser = new BinaryParser\Image\Jpeg($dataSource);
-        $image       = new Resource\Image\Jpeg($imageParser);
+        $imageParser = new BinaryParser\Image\Tiff($dataSource);
+        $image = new Resource\Image\Tiff($imageParser);
         unset($imageParser);
 
         return $image;
@@ -189,33 +195,33 @@ abstract class Image
     /**
      * Attempts to extract a PNG Image from the data source.
      *
-     * @param \ZendPdf\BinaryParser\DataSource\AbstractDataSource $dataSource
-     * @return \ZendPdf\Resource\Image\Png May also return null if
+     * @param AbstractDataSource $dataSource
+     * @return Png May also return null if
      *   the data source does not appear to contain valid image data.
      */
     protected static function _extractPngImage($dataSource)
     {
         $imageParser = new BinaryParser\Image\Png($dataSource);
-        $image       = new Resource\Image\Png($imageParser);
+        $image = new Resource\Image\Png($imageParser);
         unset($imageParser);
 
         return $image;
     }
 
     /**
-     * Attempts to extract a TIFF Image from the data source.
+     * Attempts to extract a JPEG Image from the data source.
      *
-     * @param \ZendPdf\BinaryParser\DataSource\AbstractDataSource $dataSource
-     * @return \ZendPdf\Resource\Image\Tiff May also return null if
+     * @param AbstractDataSource $dataSource
+     * @return Jpeg May also return null if
      *   the data source does not appear to contain valid image data.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
-    protected static function _extractTiffImage($dataSource)
+    protected static function _extractJpegImage($dataSource)
     {
-        throw new Exception\NotImplementedException('Tiff image fileparser is not implemented. Old styly implementation has to be used.');
+        throw new Exception\NotImplementedException('Jpeg image fileparser is not implemented. Old styly implementation has to be used.');
 
-        $imageParser = new BinaryParser\Image\Tiff($dataSource);
-        $image       = new Resource\Image\Tiff($imageParser);
+        $imageParser = new BinaryParser\Image\Jpeg($dataSource);
+        $image = new Resource\Image\Jpeg($imageParser);
         unset($imageParser);
 
         return $image;

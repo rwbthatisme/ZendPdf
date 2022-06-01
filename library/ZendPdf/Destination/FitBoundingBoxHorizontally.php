@@ -12,7 +12,9 @@ namespace ZendPdf\Destination;
 
 use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\Page;
 
 /**
  * \ZendPdf\Destination\FitBoundingBoxHorizontally explicit detination
@@ -32,16 +34,16 @@ class FitBoundingBoxHorizontally extends AbstractExplicitDestination
     /**
      * Create destination object
      *
-     * @param \ZendPdf\Page|integer $page  Page object or page number
-     * @param float $top   Top edge of displayed page
-     * @return \ZendPdf\Destination\FitBoundingBoxHorizontally
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @param Page|integer $page Page object or page number
+     * @param float $top Top edge of displayed page
+     * @return FitBoundingBoxHorizontally
+     * @throws ExceptionInterface
      */
     public static function create($page, $top)
     {
         $destinationArray = new InternalType\ArrayObject();
 
-        if ($page instanceof Pdf\Page) {
+        if ($page instanceof Page) {
             $destinationArray->items[] = $page->getPageDictionary();
         } elseif (is_integer($page)) {
             $destinationArray->items[] = new InternalType\NumericObject($page);
@@ -69,7 +71,7 @@ class FitBoundingBoxHorizontally extends AbstractExplicitDestination
      * Set top edge of the displayed page
      *
      * @param float $top
-     * @return \ZendPdf\Action\FitBoundingBoxHorizontally
+     * @return Pdf\Action\FitBoundingBoxHorizontally
      */
     public function setTopEdge($top)
     {

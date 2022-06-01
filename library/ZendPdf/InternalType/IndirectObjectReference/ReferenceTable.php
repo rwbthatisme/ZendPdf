@@ -10,8 +10,8 @@
 
 namespace ZendPdf\InternalType\IndirectObjectReference;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * PDF file reference table
@@ -25,7 +25,7 @@ class ReferenceTable
     /**
      * Parent reference table
      *
-     * @var \ZendPdf\InternalType\IndirectObjectReference\ReferenceTable
+     * @var ReferenceTable
      */
     private $_parent;
 
@@ -62,15 +62,16 @@ class ReferenceTable
     private $_usedObjects;
 
 
-
     /**
      * Object constructor
      */
-    public function  __construct()
+    public function __construct()
     {
         $this->_parent = null;
-        $this->_free   = array();  $this->_generations = array();
-        $this->_inuse  = array();  $this->_usedObjects = array();
+        $this->_free = array();
+        $this->_generations = array();
+        $this->_inuse = array();
+        $this->_usedObjects = array();
     }
 
 
@@ -91,10 +92,10 @@ class ReferenceTable
         $genNum = (int)$refElements[1];
 
         if ($inuse) {
-            $this->_inuse[$ref]          = $offset;
+            $this->_inuse[$ref] = $offset;
             $this->_usedObjects[$objNum] = $objNum;
         } else {
-            $this->_free[$ref]           = $offset;
+            $this->_free[$ref] = $offset;
             $this->_generations[$objNum] = $genNum;
         }
     }
@@ -103,7 +104,7 @@ class ReferenceTable
     /**
      * Set parent reference table
      *
-     * @param \ZendPdf\InternalType\IndirectObjectReference\ReferenceTable $parent
+     * @param ReferenceTable $parent
      */
     public function setParent(self $parent)
     {
@@ -140,7 +141,7 @@ class ReferenceTable
      *
      * @param string $ref
      * @return integer
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function getNextFree($ref)
     {

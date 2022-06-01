@@ -12,7 +12,10 @@ namespace ZendPdf\Resource\Font\Simple\Parsed;
 
 use ZendPdf as Pdf;
 use ZendPdf\BinaryParser\Font\OpenType as OpenTypeFontParser;
+use ZendPdf\BinaryParser\Font\OpenType\AbstractOpenType;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\Resource\Font\Simple\AbstractSimple;
 
 /**
  * Parsed and (optionaly) embedded fonts implementation
@@ -22,15 +25,15 @@ use ZendPdf\InternalType;
  * @package    Zend_PDF
  * @subpackage Zend_PDF_Fonts
  */
-abstract class AbstractParsed extends \ZendPdf\Resource\Font\Simple\AbstractSimple
+abstract class AbstractParsed extends AbstractSimple
 {
     /**
      * Object constructor
      *
-     * @param \ZendPdf\BinaryParser\Font\OpenType\AbstractOpenType $fontParser Font parser object containing OpenType file.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @param AbstractOpenType $fontParser Font parser object containing OpenType file.
+     * @throws ExceptionInterface
      */
-    public function __construct(OpenTypeFontParser\AbstractOpenType $fontParser)
+    public function __construct(AbstractOpenType $fontParser)
     {
         parent::__construct();
 
@@ -41,22 +44,22 @@ abstract class AbstractParsed extends \ZendPdf\Resource\Font\Simple\AbstractSimp
 
         $this->_fontNames = $fontParser->names;
 
-        $this->_isBold       = $fontParser->isBold;
-        $this->_isItalic     = $fontParser->isItalic;
+        $this->_isBold = $fontParser->isBold;
+        $this->_isItalic = $fontParser->isItalic;
         $this->_isMonospaced = $fontParser->isMonospaced;
 
-        $this->_underlinePosition  = $fontParser->underlinePosition;
+        $this->_underlinePosition = $fontParser->underlinePosition;
         $this->_underlineThickness = $fontParser->underlineThickness;
-        $this->_strikePosition     = $fontParser->strikePosition;
-        $this->_strikeThickness    = $fontParser->strikeThickness;
+        $this->_strikePosition = $fontParser->strikePosition;
+        $this->_strikeThickness = $fontParser->strikeThickness;
 
         $this->_unitsPerEm = $fontParser->unitsPerEm;
 
-        $this->_ascent  = $fontParser->ascent;
+        $this->_ascent = $fontParser->ascent;
         $this->_descent = $fontParser->descent;
         $this->_lineGap = $fontParser->lineGap;
 
-        $this->_glyphWidths       = $fontParser->glyphWidths;
+        $this->_glyphWidths = $fontParser->glyphWidths;
         $this->_missingGlyphWidth = $this->_glyphWidths[0];
 
 
@@ -69,7 +72,7 @@ abstract class AbstractParsed extends \ZendPdf\Resource\Font\Simple\AbstractSimp
         $this->_resource->BaseFont = new InternalType\NameObject($baseFont);
 
         $this->_resource->FirstChar = new InternalType\NumericObject(0);
-        $this->_resource->LastChar  = new InternalType\NumericObject(count($this->_glyphWidths) - 1);
+        $this->_resource->LastChar = new InternalType\NumericObject(count($this->_glyphWidths) - 1);
 
         /* Now convert the scalar glyph widths to \ZendPdf\InternalType\NumericObect objects.
          */

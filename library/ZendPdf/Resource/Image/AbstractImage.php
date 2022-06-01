@@ -32,9 +32,10 @@ abstract class AbstractImage extends Resource\AbstractResource
     {
         parent::__construct('');
 
-        $this->_resource->dictionary->Type    = new InternalType\NameObject('XObject');
+        $this->_resource->dictionary->Type = new InternalType\NameObject('XObject');
         $this->_resource->dictionary->Subtype = new InternalType\NameObject('Image');
     }
+
     /**
      * get the height in pixels of the image
      *

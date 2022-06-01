@@ -10,7 +10,11 @@
 
 namespace ZendPdf;
 
+use ZendPdf\BinaryParser\DataSource\AbstractDataSource;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
+use ZendPdf\Resource\Font\AbstractFont;
+use ZendPdf\Resource\Font\OpenType\TrueType;
 
 /**
  * Abstract factory class which vends {@link \ZendPdf\Resource\Font\AbstractFont} objects.
@@ -178,54 +182,54 @@ abstract class Font
     /**
      * Full copyright notice for the font.
      */
-    const NAME_COPYRIGHT =  0;
+    const NAME_COPYRIGHT = 0;
 
     /**
      * Font family name. Used to group similar styles of fonts together.
      */
-    const NAME_FAMILY =  1;
+    const NAME_FAMILY = 1;
 
     /**
      * Font style within the font family. Examples: Regular, Italic, Bold, etc.
      */
-    const NAME_STYLE =  2;
+    const NAME_STYLE = 2;
 
     /**
      * Unique font identifier.
      */
-    const NAME_ID =  3;
+    const NAME_ID = 3;
 
     /**
      * Full font name. Usually a combination of the {@link NAME_FAMILY} and
      * {@link NAME_STYLE} strings.
      */
-    const NAME_FULL =  4;
+    const NAME_FULL = 4;
 
     /**
      * Version number of the font.
      */
-    const NAME_VERSION =  5;
+    const NAME_VERSION = 5;
 
     /**
      * PostScript name for the font. This is the name used to identify fonts
      * internally and within the PDF file.
      */
-    const NAME_POSTSCRIPT =  6;
+    const NAME_POSTSCRIPT = 6;
 
     /**
      * Font trademark notice. This is distinct from the {@link NAME_COPYRIGHT}.
      */
-    const NAME_TRADEMARK =  7;
+    const NAME_TRADEMARK = 7;
 
     /**
      * Name of the font manufacturer.
      */
-    const NAME_MANUFACTURER =  8;
+    const NAME_MANUFACTURER = 8;
 
     /**
      * Name of the designer of the font.
      */
-    const NAME_DESIGNER =  9;
+    const NAME_DESIGNER = 9;
 
     /**
      * Description of the font. May contain revision information, usage
@@ -397,7 +401,6 @@ abstract class Font
     const EMBED_SUPPRESS_EMBED_EXCEPTION = 0x08;
 
 
-
     /**** Class Variables ****/
 
 
@@ -406,15 +409,14 @@ abstract class Font
      * The values are the font objects themselves.
      * @var array
      */
-    private static $_fontNames = array();
+    private static $_fontNames = [];
 
     /**
      * Array whose keys are the md5 hash of the full paths on disk for parsed
      * fonts. The values are the font objects themselves.
      * @var array
      */
-    private static $_fontFilePaths = array();
-
+    private static $_fontFilePaths = [];
 
 
     /**** Public Interface ****/
@@ -446,11 +448,11 @@ abstract class Font
      *
      * @param string $name Full PostScript name of font.
      * @param integer $embeddingOptions (optional) Options for font embedding.
-     * @return \ZendPdf\Resource\Font\AbstractFont
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @return AbstractFont
+     * @throws ExceptionInterface
      */
     public static function fontWithName($name, $embeddingOptions = 0)
-        {
+    {
         /* First check the cache. Don't duplicate font objects.
          */
         if (isset(self::$_fontNames[$name])) {
@@ -557,8 +559,8 @@ abstract class Font
      *
      * @param string $filePath Full path to the font file.
      * @param integer $embeddingOptions (optional) Options for font embedding.
-     * @return \ZendPdf\Resource\Font\AbstractFont
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @return AbstractFont
+     * @throws ExceptionInterface
      */
     public static function fontWithPath($filePath, $embeddingOptions = 0)
     {
@@ -636,7 +638,7 @@ abstract class Font
             /* The type of font could not be determined. Give up.
              */
             throw new Exception\DomainException("Cannot determine font type: $filePath");
-         }
+        }
 
     }
 
@@ -656,11 +658,11 @@ abstract class Font
      * otherwise unusable, throws that exception. If successful, returns the
      * font object.
      *
-     * @param \ZendPdf\BinaryParser\DataSource\AbstractDataSource $dataSource
+     * @param AbstractDataSource $dataSource
      * @param integer $embeddingOptions Options for font embedding.
-     * @return \ZendPdf\Resource\Font\OpenType\TrueType May also return null if
+     * @return TrueType May also return null if
      *   the data source does not appear to contain a TrueType font.
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     protected static function _extractTrueTypeFont($dataSource, $embeddingOptions)
     {
@@ -673,7 +675,7 @@ abstract class Font
             } else {
                 /* Use Composite Type 0 font which supports Unicode character mapping */
                 $cidFont = new Resource\Font\CidFont\TrueType($fontParser, $embeddingOptions);
-                $font    = new Resource\Font\Type0($cidFont);
+                $font = new Resource\Font\Type0($cidFont);
             }
         } catch (Exception\UnrecognizedFontException $e) {
             /**

@@ -18,4 +18,5 @@ namespace ZendPdf\Exception;
  * @subpackage Zend_PDF_Exception
  */
 class BinaryParserException extends RuntimeException
-{}
+{
+}

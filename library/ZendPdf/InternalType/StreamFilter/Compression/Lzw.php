@@ -10,8 +10,8 @@
 
 namespace ZendPdf\InternalType\StreamFilter\Compression;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * LZW stream filter
@@ -22,34 +22,12 @@ use ZendPdf\Exception;
 class Lzw extends AbstractCompression
 {
     /**
-     * Get EarlyChange decode param value
-     *
-     * @param array $params
-     * @return integer
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    private static function _getEarlyChangeValue($params)
-    {
-        if (isset($params['EarlyChange'])) {
-            $earlyChange = $params['EarlyChange'];
-
-            if ($earlyChange != 0  &&  $earlyChange != 1) {
-                throw new Exception\CorruptedPdfException('Invalid value of \'EarlyChange\' decode param - ' . $earlyChange . '.' );
-            }
-            return $earlyChange;
-        } else {
-            return 1;
-        }
-    }
-
-
-    /**
      * Encode data
      *
      * @param string $data
      * @param array $params
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public static function encode($data, $params = null)
     {
@@ -66,7 +44,7 @@ class Lzw extends AbstractCompression
      * @param string $data
      * @param array $params
      * @return string
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public static function decode($data, $params = null)
     {
@@ -76,6 +54,27 @@ class Lzw extends AbstractCompression
             return self::_applyDecodeParams($data, $params);
         } else {
             return $data;
+        }
+    }
+
+    /**
+     * Get EarlyChange decode param value
+     *
+     * @param array $params
+     * @return integer
+     * @throws ExceptionInterface
+     */
+    private static function _getEarlyChangeValue($params)
+    {
+        if (isset($params['EarlyChange'])) {
+            $earlyChange = $params['EarlyChange'];
+
+            if ($earlyChange != 0 && $earlyChange != 1) {
+                throw new Exception\CorruptedPdfException('Invalid value of \'EarlyChange\' decode param - ' . $earlyChange . '.');
+            }
+            return $earlyChange;
+        } else {
+            return 1;
         }
     }
 }

@@ -10,7 +10,9 @@
 
 namespace ZendPdf\InternalType;
 
+use Zend\Memory\Container\AbstractContainer;
 use ZendPdf as Pdf;
+use ZendPdf\ObjectFactory;
 
 /**
  * PDF file 'stream' element implementation
@@ -24,7 +26,7 @@ class StreamContent extends AbstractTypeObject
     /**
      * Object value
      *
-     * @var \Zend\Memory\Container\AbstractContainer
+     * @var AbstractContainer
      */
     public $value;
 
@@ -83,25 +85,25 @@ class StreamContent extends AbstractTypeObject
     }
 
     /**
-      * Detach PDF object from the factory (if applicable), clone it and attach to new factory.
-      *
-      * @param \ZendPdf\ObjectFactory $factory  The factory to attach
-      * @param array &$processed  List of already processed indirect objects, used to avoid objects duplication
-      * @param integer $mode  Cloning mode (defines filter for objects cloning)
-      * @returns \ZendPdf\InternalType\AbstractTypeObject
-      */
-     public function makeClone(Pdf\ObjectFactory $factory, array &$processed, $mode)
-     {
-         return new self($this->value->getRef());
-     }
+     * Detach PDF object from the factory (if applicable), clone it and attach to new factory.
+     *
+     * @param ObjectFactory $factory The factory to attach
+     * @param array &$processed List of already processed indirect objects, used to avoid objects duplication
+     * @param integer $mode Cloning mode (defines filter for objects cloning)
+     * @returns AbstractTypeObject
+     */
+    public function makeClone(ObjectFactory $factory, array &$processed, $mode)
+    {
+        return new self($this->value->getRef());
+    }
 
     /**
      * Return object as string
      *
-     * @param \ZendPdf\ObjectFactory $factory
+     * @param ObjectFactory $factory
      * @return string
      */
-    public function toString(Pdf\ObjectFactory $factory = null)
+    public function toString(ObjectFactory $factory = null)
     {
         return "stream\n" . $this->value->getRef() . "\nendstream";
     }

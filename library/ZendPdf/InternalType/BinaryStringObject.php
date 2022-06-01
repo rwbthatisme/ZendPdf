@@ -11,6 +11,7 @@
 namespace ZendPdf\InternalType;
 
 use ZendPdf as Pdf;
+use ZendPdf\ObjectFactory;
 
 /**
  * PDF file 'binary string' element implementation
@@ -27,19 +28,6 @@ class BinaryStringObject extends StringObject
      * @var string
      */
     public $value;
-
-
-    /**
-     * Escape string according to the PDF rules
-     *
-     * @param string $inStr
-     * @return string
-     */
-    public static function escape($inStr)
-    {
-        return strtoupper(bin2hex($inStr));
-    }
-
 
     /**
      * Unescape string according to the PDF rules
@@ -68,18 +56,28 @@ class BinaryStringObject extends StringObject
             $chunks[] = '0';
         }
 
-        return pack('H*' , implode($chunks));
+        return pack('H*', implode($chunks));
     }
-
 
     /**
      * Return object as string
      *
-     * @param \ZendPdf\ObjectFactory $factory
+     * @param ObjectFactory $factory
      * @return string
      */
-    public function toString(Pdf\ObjectFactory $factory = null)
+    public function toString(ObjectFactory $factory = null)
     {
         return '<' . self::escape((string)$this->value) . '>';
+    }
+
+    /**
+     * Escape string according to the PDF rules
+     *
+     * @param string $inStr
+     * @return string
+     */
+    public static function escape($inStr)
+    {
+        return strtoupper(bin2hex($inStr));
     }
 }

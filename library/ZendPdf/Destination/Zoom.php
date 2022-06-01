@@ -12,7 +12,9 @@ namespace ZendPdf\Destination;
 
 use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\Page;
 
 /**
  * \ZendPdf\Destination\Zoom explicit detination
@@ -33,18 +35,18 @@ class Zoom extends AbstractExplicitDestination
     /**
      * Create destination object
      *
-     * @param \ZendPdf\Page|integer $page  Page object or page number
-     * @param float $left  Left edge of displayed page
-     * @param float $top   Top edge of displayed page
-     * @param float $zoom  Zoom factor
-     * @return \ZendPdf\Destination\Zoom
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @param Page|integer $page Page object or page number
+     * @param float $left Left edge of displayed page
+     * @param float $top Top edge of displayed page
+     * @param float $zoom Zoom factor
+     * @return Zoom
+     * @throws ExceptionInterface
      */
     public static function create($page, $left = null, $top = null, $zoom = null)
     {
         $destinationArray = new InternalType\ArrayObject();
 
-        if ($page instanceof Pdf\Page) {
+        if ($page instanceof Page) {
             $destinationArray->items[] = $page->getPageDictionary();
         } elseif (is_integer($page)) {
             $destinationArray->items[] = new InternalType\NumericObject($page);
@@ -89,7 +91,7 @@ class Zoom extends AbstractExplicitDestination
      * Set left edge of the displayed page (null means viewer application 'current value')
      *
      * @param float $left
-     * @return \ZendPdf\Action\Zoom
+     * @return Pdf\Action\Zoom
      */
     public function setLeftEdge($left)
     {
@@ -116,7 +118,7 @@ class Zoom extends AbstractExplicitDestination
      * Set top edge of the displayed page (null means viewer application 'current viewer')
      *
      * @param float $top
-     * @return \ZendPdf\Action\Zoom
+     * @return Pdf\Action\Zoom
      */
     public function setTopEdge($top)
     {
@@ -143,7 +145,7 @@ class Zoom extends AbstractExplicitDestination
      * Set ZoomFactor of the displayed page (null or 0 means viewer application 'current viewer')
      *
      * @param float $zoom
-     * @return \ZendPdf\Action\Zoom
+     * @return Pdf\Action\Zoom
      */
     public function setZoomFactor($zoom)
     {

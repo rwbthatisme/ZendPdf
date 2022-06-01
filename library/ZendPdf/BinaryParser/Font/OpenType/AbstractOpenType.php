@@ -13,6 +13,7 @@ namespace ZendPdf\BinaryParser\Font\OpenType;
 use ZendPdf as Pdf;
 use ZendPdf\Cmap;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * Abstract base class for OpenType font file parsers.
@@ -61,27 +62,10 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
     protected $_tableDirectory = array();
 
 
-
     /**** Public Interface ****/
 
 
     /* Semi-Concrete Class Implementation */
-
-    /**
-     * Verifies that the font file is in the expected format.
-     *
-     * NOTE: This method should be overridden in subclasses to check the
-     * specific format and set $this->_isScreened!
-     *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    public function screen()
-    {
-        if ($this->_isScreened) {
-            return;
-        }
-        $this->_readScalerType();
-    }
 
     /**
      * Reads and parses the font data from the file on disk.
@@ -89,7 +73,7 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
      * NOTE: This method should be overridden in subclasses to add type-
      * specific parsing and set $this->isParsed.
      *
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function parse()
     {
@@ -125,6 +109,22 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
          */
     }
 
+    /**
+     * Verifies that the font file is in the expected format.
+     *
+     * NOTE: This method should be overridden in subclasses to check the
+     * specific format and set $this->_isScreened!
+     *
+     * @throws ExceptionInterface
+     */
+    public function screen()
+    {
+        if ($this->_isScreened) {
+            return;
+        }
+        $this->_readScalerType();
+    }
+
 
 
     /**** Internal Methods ****/
@@ -133,12 +133,55 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
     /* Parser Methods */
 
     /**
+     * Reads the scaler type from the header of the OpenType font file and
+     * returns it as an unsigned long integer.
+     *
+     * The scaler type defines the type of font: OpenType font files may contain
+     * TrueType or PostScript outlines. Throws an exception if the scaler type
+     * is not recognized.
+     *
+     * @return integer
+     * @throws ExceptionInterface
+     */
+    protected function _readScalerType()
+    {
+        if ($this->_scalerType != 0) {
+            return $this->_scalerType;
+        }
+
+        $this->moveToOffset(0);
+
+        $this->_scalerType = $this->readUInt(4);
+
+        switch ($this->_scalerType) {
+            case 0x00010000:    // version 1.0 - Windows TrueType signature
+                $this->_debugLog('Windows TrueType signature');
+                break;
+
+            case 0x74727565:    // 'true' - Macintosh TrueType signature
+                $this->_debugLog('Macintosh TrueType signature');
+                break;
+
+            case 0x4f54544f:    // 'OTTO' - the CFF signature
+                $this->_debugLog('PostScript CFF signature');
+                break;
+
+            case 0x74797031:    // 'typ1'
+                throw new Exception\UnrecognizedFontException('Unsupported font type: PostScript in sfnt wrapper');
+
+            default:
+                throw new Exception\UnrecognizedFontException('Not an OpenType font file');
+        }
+        return $this->_scalerType;
+    }
+
+    /**
      * Parses the OpenType table directory.
      *
      * The table directory contains the identifier, checksum, byte offset, and
      * length of each of the information tables housed in the font file.
      *
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     protected function _parseTableDirectory()
     {
@@ -196,14 +239,13 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
         }
     }
 
-
     /**
      * Parses the OpenType head (Font Header) table.
      *
      * The head table contains global information about the font such as the
      * revision number and global metrics.
      *
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     protected function _parseHeadTable()
     {
@@ -228,7 +270,7 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
          * useful for our layout routines.
          */
         $flags = $this->readUInt(2);
-        $this->baselineAtZero    = $this->isBitSet(0, $flags);
+        $this->baselineAtZero = $this->isBitSet(0, $flags);
         $this->useIntegerScaling = $this->isBitSet(3, $flags);
 
         $this->unitsPerEm = $this->readUInt(2);
@@ -243,13 +285,13 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
         $this->xMax = $this->readInt(2);
         $this->yMax = $this->readInt(2);
         $this->_debugLog('Font bounding box: %d %d %d %d',
-                         $this->xMin, $this->yMin, $this->xMax, $this->yMax);
+            $this->xMin, $this->yMin, $this->xMax, $this->yMax);
 
         /* The style bits here must match the fsSelection bits in the OS/2
          * table, if present.
          */
         $macStyleBits = $this->readUInt(2);
-        $this->isBold   = $this->isBitSet(0, $macStyleBits);
+        $this->isBold = $this->isBitSet(0, $macStyleBits);
         $this->isItalic = $this->isBitSet(1, $macStyleBits);
 
         /* We don't need the remainder of data in this table: smallest readable
@@ -257,6 +299,42 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
          */
     }
 
+    /**
+     * Validates a given table's existence, then sets the file pointer to the
+     * start of that table.
+     *
+     * @param string $tableName
+     * @throws ExceptionInterface
+     */
+    protected function _jumpToTable($tableName)
+    {
+        if (empty($this->_tableDirectory[$tableName])) {    // do not allow NULL or zero
+            throw new Exception\CorruptedFontException("Required table '$tableName' not found!",
+                self::REQUIRED_TABLE_NOT_FOUND);
+        }
+        $this->_debugLog("Parsing $tableName table...");
+        $this->moveToOffset($this->_tableDirectory[$tableName]['offset']);
+    }
+
+    /**
+     * Reads the fixed 16.16 table version number and checks for compatibility.
+     * If the version is incompatible, throws an exception. If it is compatible,
+     * returns the version number.
+     *
+     * @param float $minVersion Minimum compatible version number.
+     * @param float $maxVertion Maximum compatible version number.
+     * @return float Table version number.
+     * @throws ExceptionInterface
+     */
+    protected function _readTableVersion($minVersion, $maxVersion)
+    {
+        $tableVersion = $this->readFixed(16, 16);
+        if (($tableVersion < $minVersion) || ($tableVersion > $maxVersion)) {
+            throw new Exception\CorruptedFontException("Unable to read version $tableVersion table");
+        }
+        $this->_debugLog('Version %.2f table', $tableVersion);
+        return $tableVersion;
+    }
 
     /**
      * Parses the OpenType name (Naming) table.
@@ -264,7 +342,7 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
      * The name table contains all of the identifying strings associated with
      * the font such as its name, copyright, trademark, license, etc.
      *
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     protected function _parseNameTable()
     {
@@ -301,15 +379,15 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
             $platformID = $this->readUInt(2);
             $encodingID = $this->readUInt(2);
 
-            if (! ( (($platformID == 3) && ($encodingID == 1)) ||    // Microsoft Unicode
-                    (($platformID == 1) && ($encodingID == 0))       // Mac Roman
-                   ) ) {
+            if (!((($platformID == 3) && ($encodingID == 1)) ||    // Microsoft Unicode
+                (($platformID == 1) && ($encodingID == 0))       // Mac Roman
+            )) {
                 $this->skipBytes(8);    // Not a supported encoding. Move on.
                 continue;
             }
 
             $languageID = $this->readUInt(2);
-            $nameID     = $this->readUInt(2);
+            $nameID = $this->readUInt(2);
             $nameLength = $this->readUInt(2);
             $nameOffset = $this->readUInt(2);
 
@@ -320,15 +398,15 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
             }
 
             $this->_debugLog('Adding nameID: %d; languageID: 0x%x; platformID: %d; offset: 0x%x (0x%x); length: %d',
-                             $nameID, $languageID, $platformID, $baseOffset + $nameOffset, $nameOffset, $nameLength);
+                $nameID, $languageID, $platformID, $baseOffset + $nameOffset, $nameOffset, $nameLength);
 
             /* Entries in the name table are sorted by platform ID. If an entry
              * exists for both Mac Roman and Microsoft Unicode, the Unicode entry
              * will prevail since it is processed last.
              */
             $nameRecords[$nameID][$languageCode] = array('platform' => $platformID,
-                                                         'offset'   => $nameOffset,
-                                                         'length'   => $nameLength );
+                'offset' => $nameOffset,
+                'length' => $nameLength);
         }
 
         /* Now go back and extract the interesting strings.
@@ -348,645 +426,6 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
         }
 
         $this->names = $fontNames;
-    }
-
-
-    /**
-     * Parses the OpenType post (PostScript Information) table.
-     *
-     * The post table contains additional information required for using the font
-     * on PostScript printers. It also contains the preferred location and
-     * thickness for an underline, which is used by our layout code.
-     *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    protected function _parsePostTable()
-    {
-        $this->_jumpToTable('post');
-
-        /* We can read versions 1-4 tables.
-         */
-        $tableVersion = $this->_readTableVersion(1, 4);
-
-        $this->italicAngle = $this->readFixed(16, 16);
-
-        $this->underlinePosition = $this->readInt(2);
-        $this->underlineThickness = $this->readInt(2);
-
-        $fixedPitch = $this->readUInt(4);
-        $this->isMonospaced = ($fixedPitch !== 0);
-
-        /* Skip over PostScript virtual memory usage.
-         */
-        $this->skipBytes(16);
-
-        /* The format of the remainder of this table is dependent on the table
-         * version. However, since it contains glyph ordering information and
-         * PostScript names which we don't use, move on. (This may change at
-         * some point in the future though...)
-         */
-    }
-
-
-    /**
-     * Parses the OpenType hhea (Horizontal Header) table.
-     *
-     * The hhea table contains information used for horizontal layout. It also
-     * contains some vertical layout information for Apple systems. The vertical
-     * layout information for the PDF file is usually taken from the OS/2 table.
-     *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    protected function _parseHheaTable()
-    {
-        $this->_jumpToTable('hhea');
-
-        /* We can read any version 1 table.
-         */
-        $tableVersion = $this->_readTableVersion(1, 1);
-
-        /* The typographic ascent, descent, and line gap values are Apple-
-         * specific. Similar values exist in the OS/2 table. We'll use these
-         * values unless better values are found in OS/2.
-         */
-        $this->ascent = $this->readInt(2);
-        $this->descent = $this->readInt(2);
-        $this->lineGap = $this->readInt(2);
-
-        /* The descent value is supposed to be negative--it's the distance
-         * relative to the baseline. However, some fonts improperly store a
-         * positive value in this field. If a positive value is found, flip the
-         * sign and record a warning in the debug log that we did this.
-         */
-        if ($this->descent > 0) {
-            $this->_debugLog('Warning: Font should specify negative descent. Actual: %d; Using %d',
-                             $this->descent, -$this->descent);
-            $this->descent = -$this->descent;
-        }
-
-        /* Skip over advance width, left and right sidebearing, max x extent,
-         * caret slope rise, run, and offset, and the four reserved fields.
-         */
-        $this->skipBytes(22);
-
-        /* These values are needed to read the hmtx table.
-         */
-        $this->metricDataFormat = $this->readInt(2);
-        $this->numberHMetrics = $this->readUInt(2);
-        $this->_debugLog('hmtx data format: %d; number of metrics: %d',
-                         $this->metricDataFormat, $this->numberHMetrics);
-    }
-
-
-    /**
-     * Parses the OpenType hhea (Horizontal Header) table.
-     *
-     * The hhea table contains information used for horizontal layout. It also
-     * contains some vertical layout information for Apple systems. The vertical
-     * layout information for the PDF file is usually taken from the OS/2 table.
-     *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    protected function _parseMaxpTable()
-    {
-        $this->_jumpToTable('maxp');
-
-        /* We don't care about table version.
-         */
-        $this->_readTableVersion(0, 1);
-
-        /* The number of glyphs in the font.
-         */
-        $this->numGlyphs = $this->readUInt(2);
-        $this->_debugLog('number of glyphs: %d', $this->numGlyphs);
-
-        // Skip other maxp table entries (if presented with table version 1.0)...
-    }
-
-
-    /**
-     * Parses the OpenType OS/2 (OS/2 and Windows Metrics) table.
-     *
-     * The OS/2 table contains additional metrics data that is required to use
-     * the font on the OS/2 or Microsoft Windows platforms. It is not required
-     * for Macintosh fonts, so may not always be present. When available, we use
-     * this table to determine most of the vertical layout and stylistic
-     * information and for the font.
-     *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    protected function _parseOs2Table()
-    {
-        if (! $this->numberHMetrics) {
-            throw new Exception\CorruptedFontException('hhea table must be parsed prior to calling this method');
-        }
-
-        try {
-            $this->_jumpToTable('OS/2');
-        } catch (Exception\CorruptedFontException $e) {
-            /* This table is not always present. If missing, use default values.
-             */
-            if ($e->getCode() == self::REQUIRED_TABLE_NOT_FOUND) {
-                $this->_debugLog('No OS/2 table found. Using default values');
-                $this->fontWeight         = Pdf\Font::WEIGHT_NORMAL;
-                $this->fontWidth          = Pdf\Font::WIDTH_NORMAL;
-                $this->isEmbeddable       = true;
-                $this->isSubsettable      = true;
-                $this->strikeThickness    = $this->unitsPerEm * 0.05;
-                $this->strikePosition     = $this->unitsPerEm * 0.225;
-                $this->isSerifFont        = false;    // the style of the font is unknown
-                $this->isSansSerifFont    = false;
-                $this->isOrnamentalFont   = false;
-                $this->isScriptFont       = false;
-                $this->isSymbolicFont     = false;
-                $this->isAdobeLatinSubset = false;
-                $this->vendorID           = '';
-                $this->xHeight            = 0;
-                $this->capitalHeight      = 0;
-                return;
-            } else {
-                // Something else went wrong. Throw this exception higher up the chain.
-                throw $e;
-            }
-        }
-
-        /* Version 0 tables are becoming rarer these days. They are only found
-         * in older fonts.
-         *
-         * Version 1 formally defines the Unicode character range bits and adds
-         * two new fields to the end of the table.
-         *
-         * Version 2 defines several additional flags to the embedding bits
-         * (fsType field) and five new fields to the end of the table.
-         *
-         * Versions 2 and 3 are structurally identical. There are only two
-         * significant differences between the two: First, in version 3, the
-         * average character width (xAvgCharWidth field) is calculated using all
-         * non-zero width glyphs in the font instead of just the Latin lower-
-         * case alphabetic characters; this doesn't affect us. Second, in
-         * version 3, the embedding bits (fsType field) have been made mutually
-         * exclusive; see additional discusson on this below.
-         *
-         * We can understand all four of these table versions.
-         */
-        $tableVersion = $this->readUInt(2);
-        if (($tableVersion < 0) || ($tableVersion > 3)) {
-            throw new Exception\CorruptedFontException("Unable to read version $tableVersion table");
-        }
-        $this->_debugLog('Version %d table', $tableVersion);
-
-        $this->averageCharWidth = $this->readInt(2);
-
-        /* Indicates the visual weight and aspect ratio of the characters. Used
-         * primarily to logically sort fonts in lists. Also used to help choose
-         * a more appropriate substitute font when necessary. See the WEIGHT_
-         * and WIDTH_ constants defined in \ZendPdf\Font.
-         */
-        $this->fontWeight = $this->readUInt(2);
-        $this->fontWidth  = $this->readUInt(2);
-
-        /* Describes the font embedding licensing rights. We can only embed and
-         * subset a font when given explicit permission.
-         *
-         * NOTE: We always interpret these bits according to the rules defined
-         * in version 3 of this table, regardless of the actual version. This
-         * means we will perform our checks in order from the most-restrictive
-         * to the least.
-         */
-        $embeddingFlags = $this->readUInt(2);
-        $this->_debugLog('Embedding flags: %d', $embeddingFlags);
-        if ($this->isBitSet(9, $embeddingFlags)) {
-            /* Only bitmaps may be embedded. We don't have the ability to strip
-             * outlines from fonts yet, so this means no embed.
-             */
-            $this->isEmbeddable = false;
-        } elseif ($this->isBitSet(1, $embeddingFlags)) {
-            /* Restricted license embedding. We currently don't have any way to
-             * enforce this, so interpret this as no embed. This may be revised
-             * in the future...
-             */
-            $this->isEmbeddable = false;
-        } else {
-            /* The remainder of the bit settings grant us permission to embed
-             * the font. There may be additional usage rights granted or denied
-             * but those only affect the PDF viewer application, not our code.
-             */
-            $this->isEmbeddable = true;
-        }
-        $this->_debugLog('Font ' . ($this->isEmbeddable ? 'may' : 'may not') . ' be embedded');
-        $isSubsettable = $this->isBitSet($embeddingFlags, 8);
-
-        /* Recommended size and offset for synthesized subscript characters.
-         */
-        $this->subscriptXSize = $this->readInt(2);
-        $this->subscriptYSize = $this->readInt(2);
-        $this->subscriptXOffset = $this->readInt(2);
-        $this->subscriptYOffset = $this->readInt(2);
-
-        /* Recommended size and offset for synthesized superscript characters.
-         */
-        $this->superscriptXSize = $this->readInt(2);
-        $this->superscriptYSize = $this->readInt(2);
-        $this->superscriptXOffset = $this->readInt(2);
-        $this->superscriptYOffset = $this->readInt(2);
-
-        /* Size and vertical offset for the strikethrough.
-         */
-        $this->strikeThickness = $this->readInt(2);
-        $this->strikePosition  = $this->readInt(2);
-
-        /* Describes the class of font: serif, sans serif, script. etc. These
-         * values are defined here:
-         *   http://www.microsoft.com/OpenType/OTSpec/ibmfc.htm
-         */
-        $familyClass = ($this->readUInt(2) >> 8);    // don't care about subclass
-        $this->_debugLog('Font family class: %d', $familyClass);
-        $this->isSerifFont      = ((($familyClass >= 1) && ($familyClass <= 5)) ||
-                                   ($familyClass == 7));
-        $this->isSansSerifFont  = ($familyClass == 8);
-        $this->isOrnamentalFont = ($familyClass == 9);
-        $this->isScriptFont     = ($familyClass == 10);
-        $this->isSymbolicFont   = ($familyClass == 12);
-
-        /* Skip over the PANOSE number. The interesting values for us overlap
-         * with the font family class defined above.
-         */
-        $this->skipBytes(10);
-
-        /* The Unicode range is made up of four 4-byte unsigned long integers
-         * which are used as bitfields covering a 128-bit range. Each bit
-         * represents a Unicode code block. If the bit is set, this font at
-         * least partially covers the characters in that block.
-         */
-        $unicodeRange1 = $this->readUInt(4);
-        $unicodeRange2 = $this->readUInt(4);
-        $unicodeRange3 = $this->readUInt(4);
-        $unicodeRange4 = $this->readUInt(4);
-        $this->_debugLog('Unicode ranges: 0x%x 0x%x 0x%x 0x%x',
-                        $unicodeRange1, $unicodeRange2, $unicodeRange3, $unicodeRange4);
-
-        /* The Unicode range is currently only used to decide if the character
-         * set covered by the font is a subset of the Adobe Latin set, meaning
-         * it only has the basic latin set. If it covers any other characters,
-         * even any of the extended latin characters, it is considered symbolic
-         * to PDF and must be described differently in the Font Descriptor.
-         */
-        /**
-         * @todo Font is recognized as Adobe Latin subset font if it only contains
-         * Basic Latin characters (only bit 0 of Unicode range bits is set).
-         * Actually, other Unicode subranges like General Punctuation (bit 31) also
-         * fall into Adobe Latin characters. So this code has to be modified.
-         */
-        $this->isAdobeLatinSubset = (($unicodeRange1 == 1) && ($unicodeRange2 == 0) &&
-                                      ($unicodeRange3 == 0) && ($unicodeRange4 == 0));
-        $this->_debugLog(($this->isAdobeLatinSubset ? 'Is' : 'Is not') . ' a subset of Adobe Latin');
-
-        $this->vendorID = $this->readBytes(4);
-
-        /* Skip the font style bits. We use the values found in the 'head' table.
-         * Also skip the first Unicode and last Unicode character indicies. Our
-         * cmap implementation does not need these values.
-         */
-        $this->skipBytes(6);
-
-        /* Typographic ascender, descender, and line gap. These values are
-         * preferred to those in the 'hhea' table.
-         */
-        $this->ascent = $this->readInt(2);
-        $this->descent = $this->readInt(2);
-        $this->lineGap = $this->readInt(2);
-
-        /* The descent value is supposed to be negative--it's the distance
-         * relative to the baseline. However, some fonts improperly store a
-         * positive value in this field. If a positive value is found, flip the
-         * sign and record a warning in the debug log that we did this.
-         */
-        if ($this->descent > 0) {
-            $this->_debugLog('Warning: Font should specify negative descent. Actual: %d; Using %d',
-                             $this->descent, -$this->descent);
-            $this->descent = -$this->descent;
-        }
-
-        /* Skip over Windows-specific ascent and descent.
-         */
-        $this->skipBytes(4);
-
-        /* Versions 0 and 1 tables do not contain the x or capital height
-         * fields. Record zero for unknown.
-         */
-        if ($tableVersion < 2) {
-            $this->xHeight = 0;
-            $this->capitalHeight = 0;
-        } else {
-
-            /* Skip over the Windows code page coverages. We are only concerned
-             * with Unicode coverage.
-             */
-            $this->skipBytes(8);
-
-            $this->xHeight = $this->readInt(2);
-            $this->capitalHeight = $this->readInt(2);
-
-            /* Ignore the remaining fields in this table. They are Windows-specific.
-             */
-        }
-        /**
-         * @todo Obtain the x and capital heights from the 'glyf' table if they
-         *   haven't been supplied here instead of storing zero.
-         */
-    }
-
-
-    /**
-     * Parses the OpenType hmtx (Horizontal Metrics) table.
-     *
-     * The hmtx table contains the horizontal metrics for every glyph contained
-     * within the font. These are the critical values for horizontal layout of
-     * text.
-     *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    protected function _parseHmtxTable()
-    {
-        $this->_jumpToTable('hmtx');
-
-        if (! $this->numberHMetrics) {
-            throw new Exception\CorruptedFontException("hhea table must be parsed prior to calling this method");
-        }
-
-        /* We only understand version 0 tables.
-         */
-        if ($this->metricDataFormat != 0) {
-            throw new Exception\CorruptedFontException("Unable to read format $this->metricDataFormat table.");
-        }
-
-        /* The hmtx table has no header. For each glpyh in the font, it contains
-         * the glyph's advance width and its left side bearing. We don't use the
-         * left side bearing.
-         */
-        $glyphWidths = array();
-        for ($i = 0; $i < $this->numberHMetrics; $i++) {
-            $glyphWidths[$i] = $this->readUInt(2);
-            $this->skipBytes(2);
-        }
-        /* Populate last value for the rest of array
-         */
-        while (count($glyphWidths) < $this->numGlyphs) {
-            $glyphWidths[] = end($glyphWidths);
-        }
-        $this->glyphWidths = $glyphWidths;
-
-        /* There is an optional table of left side bearings which is sometimes
-         * used for monospaced fonts. We don't use the left side bearing, so
-         * we can safely ignore it.
-         */
-    }
-
-
-    /**
-     * Parses the OpenType cmap (Character to Glyph Mapping) table.
-     *
-     * The cmap table provides the maps from character codes to font glyphs.
-     * There are usually at least two character maps in a font: Microsoft Unicode
-     * and Macintosh Roman. For very complex fonts, there may also be mappings
-     * for the characters in the Unicode Surrogates Area, which are UCS-4
-     * characters.
-     *
-     * @todo Need to rework the selection logic for picking a subtable. We should
-     *   have an explicit list of preferences, followed by a list of those that
-     *   are tolerable. Most specifically, since everything above this layer deals
-     *   in Unicode, we need to be sure to only accept format 0 MacRoman tables.
-     *
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    protected function _parseCMapTable()
-    {
-        $this->_jumpToTable('cmap');
-        $baseOffset = $this->_tableDirectory['cmap']['offset'];
-
-        /* We only understand version 0 tables.
-         */
-        $tableVersion = $this->readUInt(2);
-        if ($tableVersion != 0) {
-            throw new Exception\CorruptedFontException("Unable to read version $tableVersion table");
-        }
-        $this->_debugLog('Version %d table', $tableVersion);
-
-        $subtableCount = $this->readUInt(2);
-        $this->_debugLog('%d subtables', $subtableCount);
-
-        /* Like the name table, there may be many different encoding subtables
-         * present. Ideally, we are looking for an acceptable Unicode table.
-         */
-        $subtables = array();
-        for ($subtableIndex = 0; $subtableIndex < $subtableCount; $subtableIndex++) {
-
-            $platformID = $this->readUInt(2);
-            $encodingID = $this->readUInt(2);
-
-            if (! ( (($platformID == 0) && ($encodingID == 3)) ||    // Unicode 2.0 or later
-                    (($platformID == 0) && ($encodingID == 0)) ||    // Unicode
-                    (($platformID == 3) && ($encodingID == 1)) ||    // Microsoft Unicode
-                    (($platformID == 1) && ($encodingID == 0))       // Mac Roman
-                   ) ) {
-                $this->_debugLog('Unsupported encoding: platformID: %d; encodingID: %d; skipping',
-                                 $platformID, $encodingID);
-                $this->skipBytes(4);
-                continue;
-            }
-
-            $subtableOffset = $this->readUInt(4);
-            if ($subtableOffset < 0) {    // Sanity check for 4-byte unsigned on 32-bit platform
-                $this->_debugLog('Offset 0x%x out of range for platformID: %d; skipping',
-                                 $subtableOffset, $platformID);
-                continue;
-            }
-
-            $this->_debugLog('Found subtable; platformID: %d; encodingID: %d; offset: 0x%x (0x%x)',
-                             $platformID, $encodingID, $baseOffset + $subtableOffset, $subtableOffset);
-
-            $subtables[$platformID][$encodingID][] = $subtableOffset;
-        }
-
-        /* In preferred order, find a subtable to use.
-         */
-        $offsets = array();
-
-        /* Unicode 2.0 or later semantics
-         */
-        if (isset($subtables[0][3])) {
-            foreach ($subtables[0][3] as $offset) {
-                $offsets[] = $offset;
-            }
-        }
-
-        /* Unicode default semantics
-         */
-        if (isset($subtables[0][0])) {
-            foreach ($subtables[0][0] as $offset) {
-                $offsets[] = $offset;
-            }
-        }
-
-        /* Microsoft Unicode
-         */
-        if (isset($subtables[3][1])) {
-            foreach ($subtables[3][1] as $offset) {
-                $offsets[] = $offset;
-            }
-        }
-
-        /* Mac Roman.
-         */
-        if (isset($subtables[1][0])) {
-            foreach ($subtables[1][0] as $offset) {
-                $offsets[] = $offset;
-            }
-        }
-
-        $cmapType = -1;
-
-        foreach ($offsets as $offset) {
-            $cmapOffset = $baseOffset + $offset;
-            $this->moveToOffset($cmapOffset);
-            $format = $this->readUInt(2);
-            $language = -1;
-            switch ($format) {
-                case 0x0:
-                    $cmapLength = $this->readUInt(2);
-                    $language = $this->readUInt(2);
-                    if ($language != 0) {
-                        $this->_debugLog('Type 0 cmap tables must be language-independent;'
-                                         . ' language: %d; skipping', $language);
-                        continue;
-                    }
-                    break;
-
-                case 0x4:    // break intentionally omitted
-                case 0x6:
-                    $cmapLength = $this->readUInt(2);
-                    $language = $this->readUInt(2);
-                    if ($language != 0) {
-                        $this->_debugLog('Warning: cmap tables must be language-independent - this font'
-                                         . ' may not work properly; language: %d', $language);
-                    }
-                    break;
-
-                case 0x2:    // break intentionally omitted
-                case 0x8:    // break intentionally omitted
-                case 0xa:    // break intentionally omitted
-                case 0xc:
-                    $this->_debugLog('Format: 0x%x currently unsupported; skipping', $format);
-                    continue;
-                    //$this->skipBytes(2);
-                    //$cmapLength = $this->readUInt(4);
-                    //$language = $this->readUInt(4);
-                    //if ($language != 0) {
-                    //    $this->_debugLog('Warning: cmap tables must be language-independent - this font'
-                    //                     . ' may not work properly; language: %d', $language);
-                    //}
-                    //break;
-
-                default:
-                    $this->_debugLog('Unknown subtable format: 0x%x; skipping', $format);
-                    continue;
-            }
-            $cmapType = $format;
-            break;
-        }
-        if ($cmapType == -1) {
-            throw new Exception\CorruptedFontException('Unable to find usable cmap table');
-        }
-
-        /* Now extract the subtable data and create a \ZendPdf\Cmap\AbstractCmap object.
-         */
-        $this->_debugLog('Using cmap type %d; offset: 0x%x; length: %d',
-                         $cmapType, $cmapOffset, $cmapLength);
-        $this->moveToOffset($cmapOffset);
-        $cmapData = $this->readBytes($cmapLength);
-
-        $this->cmap = Cmap\AbstractCmap::cmapWithTypeData($cmapType, $cmapData);
-    }
-
-
-    /**
-     * Reads the scaler type from the header of the OpenType font file and
-     * returns it as an unsigned long integer.
-     *
-     * The scaler type defines the type of font: OpenType font files may contain
-     * TrueType or PostScript outlines. Throws an exception if the scaler type
-     * is not recognized.
-     *
-     * @return integer
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    protected function _readScalerType()
-    {
-        if ($this->_scalerType != 0) {
-            return $this->_scalerType;
-        }
-
-        $this->moveToOffset(0);
-
-        $this->_scalerType = $this->readUInt(4);
-
-        switch ($this->_scalerType) {
-            case 0x00010000:    // version 1.0 - Windows TrueType signature
-                $this->_debugLog('Windows TrueType signature');
-                break;
-
-            case 0x74727565:    // 'true' - Macintosh TrueType signature
-                $this->_debugLog('Macintosh TrueType signature');
-                break;
-
-            case 0x4f54544f:    // 'OTTO' - the CFF signature
-                $this->_debugLog('PostScript CFF signature');
-                break;
-
-            case 0x74797031:    // 'typ1'
-                throw new Exception\UnrecognizedFontException('Unsupported font type: PostScript in sfnt wrapper');
-
-            default:
-                throw new Exception\UnrecognizedFontException('Not an OpenType font file');
-        }
-        return $this->_scalerType;
-    }
-
-    /**
-     * Validates a given table's existence, then sets the file pointer to the
-     * start of that table.
-     *
-     * @param string $tableName
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    protected function _jumpToTable($tableName)
-    {
-        if (empty($this->_tableDirectory[$tableName])) {    // do not allow NULL or zero
-            throw new Exception\CorruptedFontException("Required table '$tableName' not found!",
-                                                       self::REQUIRED_TABLE_NOT_FOUND);
-        }
-        $this->_debugLog("Parsing $tableName table...");
-        $this->moveToOffset($this->_tableDirectory[$tableName]['offset']);
-    }
-
-    /**
-     * Reads the fixed 16.16 table version number and checks for compatibility.
-     * If the version is incompatible, throws an exception. If it is compatible,
-     * returns the version number.
-     *
-     * @param float $minVersion Minimum compatible version number.
-     * @param float $maxVertion Maximum compatible version number.
-     * @return float Table version number.
-     * @throws \ZendPdf\Exception\ExceptionInterface
-     */
-    protected function _readTableVersion($minVersion, $maxVersion)
-    {
-        $tableVersion = $this->readFixed(16, 16);
-        if (($tableVersion < $minVersion) || ($tableVersion > $maxVersion)) {
-            throw new Exception\CorruptedFontException("Unable to read version $tableVersion table");
-        }
-        $this->_debugLog('Version %.2f table', $tableVersion);
-        return $tableVersion;
     }
 
     /**
@@ -1083,6 +522,558 @@ abstract class AbstractOpenType extends Pdf\BinaryParser\Font\AbstractFont
         } else {    // Unknown encoding.
             return null;
         }
+    }
+
+    /**
+     * Parses the OpenType post (PostScript Information) table.
+     *
+     * The post table contains additional information required for using the font
+     * on PostScript printers. It also contains the preferred location and
+     * thickness for an underline, which is used by our layout code.
+     *
+     * @throws ExceptionInterface
+     */
+    protected function _parsePostTable()
+    {
+        $this->_jumpToTable('post');
+
+        /* We can read versions 1-4 tables.
+         */
+        $tableVersion = $this->_readTableVersion(1, 4);
+
+        $this->italicAngle = $this->readFixed(16, 16);
+
+        $this->underlinePosition = $this->readInt(2);
+        $this->underlineThickness = $this->readInt(2);
+
+        $fixedPitch = $this->readUInt(4);
+        $this->isMonospaced = ($fixedPitch !== 0);
+
+        /* Skip over PostScript virtual memory usage.
+         */
+        $this->skipBytes(16);
+
+        /* The format of the remainder of this table is dependent on the table
+         * version. However, since it contains glyph ordering information and
+         * PostScript names which we don't use, move on. (This may change at
+         * some point in the future though...)
+         */
+    }
+
+    /**
+     * Parses the OpenType hhea (Horizontal Header) table.
+     *
+     * The hhea table contains information used for horizontal layout. It also
+     * contains some vertical layout information for Apple systems. The vertical
+     * layout information for the PDF file is usually taken from the OS/2 table.
+     *
+     * @throws ExceptionInterface
+     */
+    protected function _parseHheaTable()
+    {
+        $this->_jumpToTable('hhea');
+
+        /* We can read any version 1 table.
+         */
+        $tableVersion = $this->_readTableVersion(1, 1);
+
+        /* The typographic ascent, descent, and line gap values are Apple-
+         * specific. Similar values exist in the OS/2 table. We'll use these
+         * values unless better values are found in OS/2.
+         */
+        $this->ascent = $this->readInt(2);
+        $this->descent = $this->readInt(2);
+        $this->lineGap = $this->readInt(2);
+
+        /* The descent value is supposed to be negative--it's the distance
+         * relative to the baseline. However, some fonts improperly store a
+         * positive value in this field. If a positive value is found, flip the
+         * sign and record a warning in the debug log that we did this.
+         */
+        if ($this->descent > 0) {
+            $this->_debugLog('Warning: Font should specify negative descent. Actual: %d; Using %d',
+                $this->descent, -$this->descent);
+            $this->descent = -$this->descent;
+        }
+
+        /* Skip over advance width, left and right sidebearing, max x extent,
+         * caret slope rise, run, and offset, and the four reserved fields.
+         */
+        $this->skipBytes(22);
+
+        /* These values are needed to read the hmtx table.
+         */
+        $this->metricDataFormat = $this->readInt(2);
+        $this->numberHMetrics = $this->readUInt(2);
+        $this->_debugLog('hmtx data format: %d; number of metrics: %d',
+            $this->metricDataFormat, $this->numberHMetrics);
+    }
+
+    /**
+     * Parses the OpenType hhea (Horizontal Header) table.
+     *
+     * The hhea table contains information used for horizontal layout. It also
+     * contains some vertical layout information for Apple systems. The vertical
+     * layout information for the PDF file is usually taken from the OS/2 table.
+     *
+     * @throws ExceptionInterface
+     */
+    protected function _parseMaxpTable()
+    {
+        $this->_jumpToTable('maxp');
+
+        /* We don't care about table version.
+         */
+        $this->_readTableVersion(0, 1);
+
+        /* The number of glyphs in the font.
+         */
+        $this->numGlyphs = $this->readUInt(2);
+        $this->_debugLog('number of glyphs: %d', $this->numGlyphs);
+
+        // Skip other maxp table entries (if presented with table version 1.0)...
+    }
+
+    /**
+     * Parses the OpenType OS/2 (OS/2 and Windows Metrics) table.
+     *
+     * The OS/2 table contains additional metrics data that is required to use
+     * the font on the OS/2 or Microsoft Windows platforms. It is not required
+     * for Macintosh fonts, so may not always be present. When available, we use
+     * this table to determine most of the vertical layout and stylistic
+     * information and for the font.
+     *
+     * @throws ExceptionInterface
+     */
+    protected function _parseOs2Table()
+    {
+        if (!$this->numberHMetrics) {
+            throw new Exception\CorruptedFontException('hhea table must be parsed prior to calling this method');
+        }
+
+        try {
+            $this->_jumpToTable('OS/2');
+        } catch (Exception\CorruptedFontException $e) {
+            /* This table is not always present. If missing, use default values.
+             */
+            if ($e->getCode() == self::REQUIRED_TABLE_NOT_FOUND) {
+                $this->_debugLog('No OS/2 table found. Using default values');
+                $this->fontWeight = Pdf\Font::WEIGHT_NORMAL;
+                $this->fontWidth = Pdf\Font::WIDTH_NORMAL;
+                $this->isEmbeddable = true;
+                $this->isSubsettable = true;
+                $this->strikeThickness = $this->unitsPerEm * 0.05;
+                $this->strikePosition = $this->unitsPerEm * 0.225;
+                $this->isSerifFont = false;    // the style of the font is unknown
+                $this->isSansSerifFont = false;
+                $this->isOrnamentalFont = false;
+                $this->isScriptFont = false;
+                $this->isSymbolicFont = false;
+                $this->isAdobeLatinSubset = false;
+                $this->vendorID = '';
+                $this->xHeight = 0;
+                $this->capitalHeight = 0;
+                return;
+            } else {
+                // Something else went wrong. Throw this exception higher up the chain.
+                throw $e;
+            }
+        }
+
+        /* Version 0 tables are becoming rarer these days. They are only found
+         * in older fonts.
+         *
+         * Version 1 formally defines the Unicode character range bits and adds
+         * two new fields to the end of the table.
+         *
+         * Version 2 defines several additional flags to the embedding bits
+         * (fsType field) and five new fields to the end of the table.
+         *
+         * Versions 2 and 3 are structurally identical. There are only two
+         * significant differences between the two: First, in version 3, the
+         * average character width (xAvgCharWidth field) is calculated using all
+         * non-zero width glyphs in the font instead of just the Latin lower-
+         * case alphabetic characters; this doesn't affect us. Second, in
+         * version 3, the embedding bits (fsType field) have been made mutually
+         * exclusive; see additional discusson on this below.
+         *
+         * We can understand all four of these table versions.
+         */
+        $tableVersion = $this->readUInt(2);
+        if (($tableVersion < 0) || ($tableVersion > 3)) {
+            throw new Exception\CorruptedFontException("Unable to read version $tableVersion table");
+        }
+        $this->_debugLog('Version %d table', $tableVersion);
+
+        $this->averageCharWidth = $this->readInt(2);
+
+        /* Indicates the visual weight and aspect ratio of the characters. Used
+         * primarily to logically sort fonts in lists. Also used to help choose
+         * a more appropriate substitute font when necessary. See the WEIGHT_
+         * and WIDTH_ constants defined in \ZendPdf\Font.
+         */
+        $this->fontWeight = $this->readUInt(2);
+        $this->fontWidth = $this->readUInt(2);
+
+        /* Describes the font embedding licensing rights. We can only embed and
+         * subset a font when given explicit permission.
+         *
+         * NOTE: We always interpret these bits according to the rules defined
+         * in version 3 of this table, regardless of the actual version. This
+         * means we will perform our checks in order from the most-restrictive
+         * to the least.
+         */
+        $embeddingFlags = $this->readUInt(2);
+        $this->_debugLog('Embedding flags: %d', $embeddingFlags);
+        if ($this->isBitSet(9, $embeddingFlags)) {
+            /* Only bitmaps may be embedded. We don't have the ability to strip
+             * outlines from fonts yet, so this means no embed.
+             */
+            $this->isEmbeddable = false;
+        } elseif ($this->isBitSet(1, $embeddingFlags)) {
+            /* Restricted license embedding. We currently don't have any way to
+             * enforce this, so interpret this as no embed. This may be revised
+             * in the future...
+             */
+            $this->isEmbeddable = false;
+        } else {
+            /* The remainder of the bit settings grant us permission to embed
+             * the font. There may be additional usage rights granted or denied
+             * but those only affect the PDF viewer application, not our code.
+             */
+            $this->isEmbeddable = true;
+        }
+        $this->_debugLog('Font ' . ($this->isEmbeddable ? 'may' : 'may not') . ' be embedded');
+        $isSubsettable = $this->isBitSet($embeddingFlags, 8);
+
+        /* Recommended size and offset for synthesized subscript characters.
+         */
+        $this->subscriptXSize = $this->readInt(2);
+        $this->subscriptYSize = $this->readInt(2);
+        $this->subscriptXOffset = $this->readInt(2);
+        $this->subscriptYOffset = $this->readInt(2);
+
+        /* Recommended size and offset for synthesized superscript characters.
+         */
+        $this->superscriptXSize = $this->readInt(2);
+        $this->superscriptYSize = $this->readInt(2);
+        $this->superscriptXOffset = $this->readInt(2);
+        $this->superscriptYOffset = $this->readInt(2);
+
+        /* Size and vertical offset for the strikethrough.
+         */
+        $this->strikeThickness = $this->readInt(2);
+        $this->strikePosition = $this->readInt(2);
+
+        /* Describes the class of font: serif, sans serif, script. etc. These
+         * values are defined here:
+         *   http://www.microsoft.com/OpenType/OTSpec/ibmfc.htm
+         */
+        $familyClass = ($this->readUInt(2) >> 8);    // don't care about subclass
+        $this->_debugLog('Font family class: %d', $familyClass);
+        $this->isSerifFont = ((($familyClass >= 1) && ($familyClass <= 5)) ||
+            ($familyClass == 7));
+        $this->isSansSerifFont = ($familyClass == 8);
+        $this->isOrnamentalFont = ($familyClass == 9);
+        $this->isScriptFont = ($familyClass == 10);
+        $this->isSymbolicFont = ($familyClass == 12);
+
+        /* Skip over the PANOSE number. The interesting values for us overlap
+         * with the font family class defined above.
+         */
+        $this->skipBytes(10);
+
+        /* The Unicode range is made up of four 4-byte unsigned long integers
+         * which are used as bitfields covering a 128-bit range. Each bit
+         * represents a Unicode code block. If the bit is set, this font at
+         * least partially covers the characters in that block.
+         */
+        $unicodeRange1 = $this->readUInt(4);
+        $unicodeRange2 = $this->readUInt(4);
+        $unicodeRange3 = $this->readUInt(4);
+        $unicodeRange4 = $this->readUInt(4);
+        $this->_debugLog('Unicode ranges: 0x%x 0x%x 0x%x 0x%x',
+            $unicodeRange1, $unicodeRange2, $unicodeRange3, $unicodeRange4);
+
+        /* The Unicode range is currently only used to decide if the character
+         * set covered by the font is a subset of the Adobe Latin set, meaning
+         * it only has the basic latin set. If it covers any other characters,
+         * even any of the extended latin characters, it is considered symbolic
+         * to PDF and must be described differently in the Font Descriptor.
+         */
+        /**
+         * @todo Font is recognized as Adobe Latin subset font if it only contains
+         * Basic Latin characters (only bit 0 of Unicode range bits is set).
+         * Actually, other Unicode subranges like General Punctuation (bit 31) also
+         * fall into Adobe Latin characters. So this code has to be modified.
+         */
+        $this->isAdobeLatinSubset = (($unicodeRange1 == 1) && ($unicodeRange2 == 0) &&
+            ($unicodeRange3 == 0) && ($unicodeRange4 == 0));
+        $this->_debugLog(($this->isAdobeLatinSubset ? 'Is' : 'Is not') . ' a subset of Adobe Latin');
+
+        $this->vendorID = $this->readBytes(4);
+
+        /* Skip the font style bits. We use the values found in the 'head' table.
+         * Also skip the first Unicode and last Unicode character indicies. Our
+         * cmap implementation does not need these values.
+         */
+        $this->skipBytes(6);
+
+        /* Typographic ascender, descender, and line gap. These values are
+         * preferred to those in the 'hhea' table.
+         */
+        $this->ascent = $this->readInt(2);
+        $this->descent = $this->readInt(2);
+        $this->lineGap = $this->readInt(2);
+
+        /* The descent value is supposed to be negative--it's the distance
+         * relative to the baseline. However, some fonts improperly store a
+         * positive value in this field. If a positive value is found, flip the
+         * sign and record a warning in the debug log that we did this.
+         */
+        if ($this->descent > 0) {
+            $this->_debugLog('Warning: Font should specify negative descent. Actual: %d; Using %d',
+                $this->descent, -$this->descent);
+            $this->descent = -$this->descent;
+        }
+
+        /* Skip over Windows-specific ascent and descent.
+         */
+        $this->skipBytes(4);
+
+        /* Versions 0 and 1 tables do not contain the x or capital height
+         * fields. Record zero for unknown.
+         */
+        if ($tableVersion < 2) {
+            $this->xHeight = 0;
+            $this->capitalHeight = 0;
+        } else {
+
+            /* Skip over the Windows code page coverages. We are only concerned
+             * with Unicode coverage.
+             */
+            $this->skipBytes(8);
+
+            $this->xHeight = $this->readInt(2);
+            $this->capitalHeight = $this->readInt(2);
+
+            /* Ignore the remaining fields in this table. They are Windows-specific.
+             */
+        }
+        /**
+         * @todo Obtain the x and capital heights from the 'glyf' table if they
+         *   haven't been supplied here instead of storing zero.
+         */
+    }
+
+    /**
+     * Parses the OpenType hmtx (Horizontal Metrics) table.
+     *
+     * The hmtx table contains the horizontal metrics for every glyph contained
+     * within the font. These are the critical values for horizontal layout of
+     * text.
+     *
+     * @throws ExceptionInterface
+     */
+    protected function _parseHmtxTable()
+    {
+        $this->_jumpToTable('hmtx');
+
+        if (!$this->numberHMetrics) {
+            throw new Exception\CorruptedFontException("hhea table must be parsed prior to calling this method");
+        }
+
+        /* We only understand version 0 tables.
+         */
+        if ($this->metricDataFormat != 0) {
+            throw new Exception\CorruptedFontException("Unable to read format $this->metricDataFormat table.");
+        }
+
+        /* The hmtx table has no header. For each glpyh in the font, it contains
+         * the glyph's advance width and its left side bearing. We don't use the
+         * left side bearing.
+         */
+        $glyphWidths = array();
+        for ($i = 0; $i < $this->numberHMetrics; $i++) {
+            $glyphWidths[$i] = $this->readUInt(2);
+            $this->skipBytes(2);
+        }
+        /* Populate last value for the rest of array
+         */
+        while (count($glyphWidths) < $this->numGlyphs) {
+            $glyphWidths[] = end($glyphWidths);
+        }
+        $this->glyphWidths = $glyphWidths;
+
+        /* There is an optional table of left side bearings which is sometimes
+         * used for monospaced fonts. We don't use the left side bearing, so
+         * we can safely ignore it.
+         */
+    }
+
+    /**
+     * Parses the OpenType cmap (Character to Glyph Mapping) table.
+     *
+     * The cmap table provides the maps from character codes to font glyphs.
+     * There are usually at least two character maps in a font: Microsoft Unicode
+     * and Macintosh Roman. For very complex fonts, there may also be mappings
+     * for the characters in the Unicode Surrogates Area, which are UCS-4
+     * characters.
+     *
+     * @throws ExceptionInterface
+     * @todo Need to rework the selection logic for picking a subtable. We should
+     *   have an explicit list of preferences, followed by a list of those that
+     *   are tolerable. Most specifically, since everything above this layer deals
+     *   in Unicode, we need to be sure to only accept format 0 MacRoman tables.
+     *
+     */
+    protected function _parseCMapTable()
+    {
+        $this->_jumpToTable('cmap');
+        $baseOffset = $this->_tableDirectory['cmap']['offset'];
+
+        /* We only understand version 0 tables.
+         */
+        $tableVersion = $this->readUInt(2);
+        if ($tableVersion != 0) {
+            throw new Exception\CorruptedFontException("Unable to read version $tableVersion table");
+        }
+        $this->_debugLog('Version %d table', $tableVersion);
+
+        $subtableCount = $this->readUInt(2);
+        $this->_debugLog('%d subtables', $subtableCount);
+
+        /* Like the name table, there may be many different encoding subtables
+         * present. Ideally, we are looking for an acceptable Unicode table.
+         */
+        $subtables = array();
+        for ($subtableIndex = 0; $subtableIndex < $subtableCount; $subtableIndex++) {
+
+            $platformID = $this->readUInt(2);
+            $encodingID = $this->readUInt(2);
+
+            if (!((($platformID == 0) && ($encodingID == 3)) ||    // Unicode 2.0 or later
+                (($platformID == 0) && ($encodingID == 0)) ||    // Unicode
+                (($platformID == 3) && ($encodingID == 1)) ||    // Microsoft Unicode
+                (($platformID == 1) && ($encodingID == 0))       // Mac Roman
+            )) {
+                $this->_debugLog('Unsupported encoding: platformID: %d; encodingID: %d; skipping',
+                    $platformID, $encodingID);
+                $this->skipBytes(4);
+                continue;
+            }
+
+            $subtableOffset = $this->readUInt(4);
+            if ($subtableOffset < 0) {    // Sanity check for 4-byte unsigned on 32-bit platform
+                $this->_debugLog('Offset 0x%x out of range for platformID: %d; skipping',
+                    $subtableOffset, $platformID);
+                continue;
+            }
+
+            $this->_debugLog('Found subtable; platformID: %d; encodingID: %d; offset: 0x%x (0x%x)',
+                $platformID, $encodingID, $baseOffset + $subtableOffset, $subtableOffset);
+
+            $subtables[$platformID][$encodingID][] = $subtableOffset;
+        }
+
+        /* In preferred order, find a subtable to use.
+         */
+        $offsets = array();
+
+        /* Unicode 2.0 or later semantics
+         */
+        if (isset($subtables[0][3])) {
+            foreach ($subtables[0][3] as $offset) {
+                $offsets[] = $offset;
+            }
+        }
+
+        /* Unicode default semantics
+         */
+        if (isset($subtables[0][0])) {
+            foreach ($subtables[0][0] as $offset) {
+                $offsets[] = $offset;
+            }
+        }
+
+        /* Microsoft Unicode
+         */
+        if (isset($subtables[3][1])) {
+            foreach ($subtables[3][1] as $offset) {
+                $offsets[] = $offset;
+            }
+        }
+
+        /* Mac Roman.
+         */
+        if (isset($subtables[1][0])) {
+            foreach ($subtables[1][0] as $offset) {
+                $offsets[] = $offset;
+            }
+        }
+
+        $cmapType = -1;
+
+        foreach ($offsets as $offset) {
+            $cmapOffset = $baseOffset + $offset;
+            $this->moveToOffset($cmapOffset);
+            $format = $this->readUInt(2);
+            $language = -1;
+            switch ($format) {
+                case 0x0:
+                    $cmapLength = $this->readUInt(2);
+                    $language = $this->readUInt(2);
+                    if ($language != 0) {
+                        $this->_debugLog('Type 0 cmap tables must be language-independent;'
+                            . ' language: %d; skipping', $language);
+                        continue;
+                    }
+                    break;
+
+                case 0x4:    // break intentionally omitted
+                case 0x6:
+                    $cmapLength = $this->readUInt(2);
+                    $language = $this->readUInt(2);
+                    if ($language != 0) {
+                        $this->_debugLog('Warning: cmap tables must be language-independent - this font'
+                            . ' may not work properly; language: %d', $language);
+                    }
+                    break;
+
+                case 0x2:    // break intentionally omitted
+                case 0x8:    // break intentionally omitted
+                case 0xa:    // break intentionally omitted
+                case 0xc:
+                    $this->_debugLog('Format: 0x%x currently unsupported; skipping', $format);
+                    continue;
+                //$this->skipBytes(2);
+                //$cmapLength = $this->readUInt(4);
+                //$language = $this->readUInt(4);
+                //if ($language != 0) {
+                //    $this->_debugLog('Warning: cmap tables must be language-independent - this font'
+                //                     . ' may not work properly; language: %d', $language);
+                //}
+                //break;
+
+                default:
+                    $this->_debugLog('Unknown subtable format: 0x%x; skipping', $format);
+                    continue;
+            }
+            $cmapType = $format;
+            break;
+        }
+        if ($cmapType == -1) {
+            throw new Exception\CorruptedFontException('Unable to find usable cmap table');
+        }
+
+        /* Now extract the subtable data and create a \ZendPdf\Cmap\AbstractCmap object.
+         */
+        $this->_debugLog('Using cmap type %d; offset: 0x%x; length: %d',
+            $cmapType, $cmapOffset, $cmapLength);
+        $this->moveToOffset($cmapOffset);
+        $cmapData = $this->readBytes($cmapLength);
+
+        $this->cmap = Cmap\AbstractCmap::cmapWithTypeData($cmapType, $cmapData);
     }
 
 }

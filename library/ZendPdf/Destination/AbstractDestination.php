@@ -25,13 +25,13 @@ abstract class AbstractDestination extends Pdf\InternalStructure\NavigationTarge
     /**
      * Load Destination object from a specified resource
      *
-     * @internal
      * @param $destinationArray
-     * @return \ZendPdf\Destination\AbstractDestination
+     * @return AbstractDestination
+     * @internal
      */
     public static function load(InternalType\AbstractTypeObject $resource)
     {
-        if ($resource->getType() == InternalType\AbstractTypeObject::TYPE_NAME  ||  $resource->getType() == InternalType\AbstractTypeObject::TYPE_STRING) {
+        if ($resource->getType() == InternalType\AbstractTypeObject::TYPE_NAME || $resource->getType() == InternalType\AbstractTypeObject::TYPE_STRING) {
             return new Named($resource);
         }
 

@@ -12,6 +12,7 @@ namespace ZendPdf\BinaryParser\Font\OpenType;
 
 use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 
 /**
  * Parses an OpenType font file containing TrueType outlines.
@@ -29,7 +30,7 @@ class TrueType extends AbstractOpenType
     /**
      * Verifies that the font file actually contains TrueType outlines.
      *
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
     public function screen()
     {

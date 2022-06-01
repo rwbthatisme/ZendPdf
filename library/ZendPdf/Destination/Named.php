@@ -10,9 +10,12 @@
 
 namespace ZendPdf\Destination;
 
-use ZendPdf as Pdf;
 use ZendPdf\Exception;
+use ZendPdf\Exception\ExceptionInterface;
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\AbstractTypeObject;
+use ZendPdf\InternalType\NameObject;
+use ZendPdf\InternalType\StringObject;
 
 /**
  * Destination array: [page /Fit]
@@ -31,7 +34,7 @@ class Named extends AbstractDestination
     /**
      * Destination name
      *
-     * @var \ZendPdf\InternalType\NameObject|\ZendPdf\InternalType\StringObject
+     * @var NameObject|StringObject
      */
     protected $_nameElement;
 
@@ -39,11 +42,11 @@ class Named extends AbstractDestination
      * Named destination object constructor
      *
      * @param $resource
-     * @throws \ZendPdf\Exception\ExceptionInterface
+     * @throws ExceptionInterface
      */
-    public function __construct(InternalType\AbstractTypeObject $resource)
+    public function __construct(AbstractTypeObject $resource)
     {
-        if ($resource->getType() != InternalType\AbstractTypeObject::TYPE_NAME  &&  $resource->getType() != InternalType\AbstractTypeObject::TYPE_STRING) {
+        if ($resource->getType() != AbstractTypeObject::TYPE_NAME && $resource->getType() != AbstractTypeObject::TYPE_STRING) {
             throw new Exception\CorruptedPdfException('Named destination resource must be a PDF name or a PDF string.');
         }
 
@@ -54,17 +57,17 @@ class Named extends AbstractDestination
      * Create named destination object
      *
      * @param string $name
-     * @return \ZendPdf\Destination\Named
+     * @return Named
      */
     public static function create($name)
     {
-        return new self(new InternalType\StringObject($name));
+        return new self(new StringObject($name));
     }
 
     /**
      * Get name
      *
-     * @return \ZendPdf\InternalType\AbstractTypeObject
+     * @return AbstractTypeObject
      */
     public function getName()
     {
@@ -74,8 +77,8 @@ class Named extends AbstractDestination
     /**
      * Get resource
      *
+     * @return AbstractTypeObject
      * @internal
-     * @return \ZendPdf\InternalType\AbstractTypeObject
      */
     public function getResource()
     {

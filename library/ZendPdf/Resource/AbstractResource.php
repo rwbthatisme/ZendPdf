@@ -10,9 +10,11 @@
 
 namespace ZendPdf\Resource;
 
-use ZendPdf as Pdf;
 use ZendPdf\InternalType;
+use ZendPdf\InternalType\AbstractTypeObject;
+use ZendPdf\InternalType\IndirectObject;
 use ZendPdf\ObjectFactory;
+use ZendPdf\Page;
 
 /**
  * PDF file Resource abstraction
@@ -38,14 +40,14 @@ abstract class AbstractResource
      * doesn't duplicate resource description each time then Resource is rendered
      * (referenced).
      *
-     * @var \ZendPdf\ObjectFactory
+     * @var ObjectFactory
      */
     protected $_objectFactory;
 
     /**
      * Main resource object
      *
-     * @var \ZendPdf\InternalType\IndirectObject
+     * @var IndirectObject
      */
     protected $_resource;
 
@@ -55,12 +57,12 @@ abstract class AbstractResource
      * If resource is not a \ZendPdf\InternalType\AbstractTypeObject object,
      * then stream object with specified value is generated.
      *
-     * @param \ZendPdf\InternalType\AbstractTypeObject|string $resource
+     * @param AbstractTypeObject|string $resource
      */
     public function __construct($resource)
     {
         $this->_objectFactory = ObjectFactory::createFactory(1);
-        if ($resource instanceof InternalType\AbstractTypeObject) {
+        if ($resource instanceof AbstractTypeObject) {
             $this->_resource = $this->_objectFactory->newObject($resource);
         } else {
             $this->_resource = $this->_objectFactory->newStreamObject($resource);
@@ -73,7 +75,7 @@ abstract class AbstractResource
      */
     public function __clone()
     {
-        $factory = \ZendPdf\ObjectFactory::createFactory(1);
+        $factory = ObjectFactory::createFactory(1);
         $processed = array();
 
         // Clone dictionary object.
@@ -82,27 +84,27 @@ abstract class AbstractResource
         $dictionary = new InternalType\DictionaryObject();
         foreach ($this->_pageDictionary->getKeys() as $key) {
             $dictionary->$key = $this->_pageDictionary->$key->makeClone($factory,
-                                                                        $processed,
-                                                                        InternalType\AbstractTypeObject::CLONE_MODE_SKIP_PAGES);
+                $processed,
+                AbstractTypeObject::CLONE_MODE_SKIP_PAGES);
         }
 
         $this->_pageDictionary = $factory->newObject($dictionary);
-        $this->_objFactory     = $factory;
-        $this->_attached       = false;
-        $this->_style          = null;
-        $this->_font           = null;
+        $this->_objFactory = $factory;
+        $this->_attached = false;
+        $this->_style = null;
+        $this->_font = null;
     }
 
     /**
      * Clone page, extract it and dependent objects from the current document,
      * so it can be used within other docs.
      *
-     * @internal
-     * @param \ZendPdf\ObjectFactory $factory
+     * @param ObjectFactory $factory
      * @param array $processed
-     * @return \ZendPdf\Page
+     * @return Page
+     * @internal
      */
-    public function clonePage($factory, &$processed)
+    public function clonePage($factory, array &$processed)
     {
         // Clone dictionary object.
         // Do it explicitly to prevent sharing page attributes between different
@@ -110,11 +112,11 @@ abstract class AbstractResource
         $dictionary = new InternalType\DictionaryObject();
         foreach ($this->_pageDictionary->getKeys() as $key) {
             $dictionary->$key = $this->_pageDictionary->$key->makeClone($factory,
-                                                                        $processed,
-                                                                        InternalType\AbstractTypeObject::CLONE_MODE_SKIP_PAGES);
+                $processed,
+                AbstractTypeObject::CLONE_MODE_SKIP_PAGES);
         }
 
-        $clonedPage = new Pdf\Page($factory->newObject($dictionary), $factory);
+        $clonedPage = new Page($factory->newObject($dictionary), $factory);
         $clonedPage->_attached = false;
 
         return $clonedPage;
@@ -124,8 +126,8 @@ abstract class AbstractResource
      * Get resource.
      * Used to reference resource in an internal PDF data structures (resource dictionaries)
      *
+     * @return IndirectObject
      * @internal
-     * @return \ZendPdf\InternalType\IndirectObject
      */
     public function getResource()
     {
@@ -135,8 +137,8 @@ abstract class AbstractResource
     /**
      * Get factory.
      *
+     * @return ObjectFactory
      * @internal
-     * @return \ZendPdf\ObjectFactory
      */
     public function getFactory()
     {

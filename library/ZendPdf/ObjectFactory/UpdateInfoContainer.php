@@ -10,6 +10,7 @@
 
 namespace ZendPdf\ObjectFactory;
 
+use Zend\Memory\Container\AbstractContainer;
 use ZendPdf as Pdf;
 
 /**
@@ -45,7 +46,7 @@ class UpdateInfoContainer
     /**
      * String representation of the object
      *
-     * @var \Zend\Memory\Container\AbstractContainer|null
+     * @var AbstractContainer|null
      */
     private $_dump = null;
 
